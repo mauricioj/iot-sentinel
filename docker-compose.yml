@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      API_PORT: ${API_PORT}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://api:3000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
+    depends_on:
+      api:
+        condition: service_started
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${PUBLIC_API_URL}
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "5173:5173"
+
+volumes:
+  postgres_data:
