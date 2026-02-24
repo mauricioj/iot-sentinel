@@ -36,4 +36,15 @@ export async function locationRoutes(app: FastifyInstance): Promise<void> {
       return row;
     }
   );
+
+  app.delete<{ Params: { id: string } }>(
+    "/locations/:id",
+    { preHandler: [authGuard] },
+    async (request, reply) => {
+      const row = await Location.findByPk(request.params.id);
+      if (!row) return reply.code(404).send({ message: "Not found" });
+      await row.destroy();
+      return reply.code(204).send();
+    }
+  );
 }

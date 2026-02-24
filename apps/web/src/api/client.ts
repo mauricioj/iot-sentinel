@@ -2,7 +2,7 @@ import { clearTokens, getAccessToken, getRefreshToken, setAccessToken } from "./
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-type HttpMethod = "GET" | "POST" | "PUT";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 async function request<T>(
   path: string,
@@ -26,6 +26,7 @@ async function request<T>(
     const refreshToken = getRefreshToken();
     if (!refreshToken) {
       clearTokens();
+      window.location.href = "/login";
       throw new Error("Unauthorized");
     }
 
@@ -36,6 +37,7 @@ async function request<T>(
     });
     if (!refreshed.ok) {
       clearTokens();
+      window.location.href = "/login";
       throw new Error("Session expired");
     }
 
@@ -45,7 +47,18 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    let message = "Request failed";
+    try {
+      const errorData = (await response.json()) as { message?: string };
+      message = errorData.message ?? message;
+    } catch {
+      message = await response.text();
+    }
+    throw new Error(message);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json();
@@ -54,5 +67,6 @@ async function request<T>(
 export const api = {
   get: <T>(path: string) => request<T>(path, "GET"),
   post: <T>(path: string, body?: unknown) => request<T>(path, "POST", body),
-  put: <T>(path: string, body?: unknown) => request<T>(path, "PUT", body)
+  put: <T>(path: string, body?: unknown) => request<T>(path, "PUT", body),
+  delete: <T>(path: string) => request<T>(path, "DELETE")
 };

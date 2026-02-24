@@ -1,13 +1,10 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
-
-type Device = {
-  id: string;
-  name: string;
-  status: string;
-  last_seen_at: string | null;
-};
+import { Device } from "../api/types";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Table } from "../components/ui/Table";
+import { Badge } from "../components/ui/Badge";
 
 export function DevicesPage() {
   const devices = useQuery({
@@ -16,21 +13,32 @@ export function DevicesPage() {
   });
 
   return (
-    <main className="container">
-      <header className="row">
-        <h1>Devices</h1>
-        <Link to="/discovered-hosts">Voltar</Link>
-      </header>
-      <div className="card">
-        {devices.data?.map((d) => (
-          <div key={d.id} className="list-row">
-            <div>
-              <strong>{d.name}</strong> - {d.status} - {d.last_seen_at ?? "-"}
-            </div>
-            <Link to={`/devices/${d.id}`}>Detalhes</Link>
-          </div>
-        ))}
-      </div>
-    </main>
+    <section>
+      <PageHeader title="Devices" subtitle="Inventario de dispositivos registrados" />
+      <Table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Last Seen</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devices.data?.map((d) => (
+            <tr key={d.id}>
+              <td>{d.name}</td>
+              <td>
+                <Badge>{d.status}</Badge>
+              </td>
+              <td>{d.last_seen_at ? new Date(d.last_seen_at).toLocaleString() : "-"}</td>
+              <td>
+                <Link to={`/devices/${d.id}`}>Details</Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </section>
   );
 }

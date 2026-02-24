@@ -13,13 +13,17 @@ export function useAuth() {
       password
     });
     setTokens(data.accessToken, data.refreshToken);
-    navigate("/discovered-hosts");
+    navigate("/");
   }
 
   async function logout() {
     const refreshToken = getRefreshToken();
     if (refreshToken) {
-      await api.post("/auth/logout", { refreshToken });
+      try {
+        await api.post("/auth/logout", { refreshToken });
+      } catch {
+        // ignore logout failure and clear local session
+      }
     }
     clearTokens();
     navigate("/login");

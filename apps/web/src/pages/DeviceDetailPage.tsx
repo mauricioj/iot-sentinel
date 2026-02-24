@@ -1,19 +1,10 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api/client";
-
-type DeviceDetail = {
-  id: string;
-  name: string;
-  status: string;
-  notes: string | null;
-  interfaces: Array<{
-    id: string;
-    mac: string;
-    last_ip: string | null;
-    vendor: string | null;
-  }>;
-};
+import { DeviceDetail } from "../api/types";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Table } from "../components/ui/Table";
+import { Badge } from "../components/ui/Badge";
 
 export function DeviceDetailPage() {
   const { id } = useParams();
@@ -23,23 +14,39 @@ export function DeviceDetailPage() {
   });
 
   return (
-    <main className="container">
-      <header className="row">
-        <h1>Device Detail</h1>
-        <Link to="/devices">Voltar</Link>
-      </header>
+    <section>
+      <PageHeader
+        title={device.data?.name ?? "Device Detail"}
+        subtitle="Informacoes detalhadas e interfaces de rede"
+        actions={<Link to="/devices">Back</Link>}
+      />
       <div className="card">
         <p>
-          <strong>{device.data?.name}</strong> - {device.data?.status}
+          Status: <Badge>{device.data?.status ?? "unknown"}</Badge>
         </p>
         <p>{device.data?.notes ?? "Sem notas"}</p>
-        <h3>Interfaces</h3>
-        {device.data?.interfaces?.map((n) => (
-          <div key={n.id}>
-            {n.mac} {n.last_ip ?? "-"} {n.vendor ?? "-"}
-          </div>
-        ))}
       </div>
-    </main>
+
+      <Table>
+        <thead>
+          <tr>
+            <th>MAC</th>
+            <th>IP</th>
+            <th>Vendor</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {device.data?.interfaces?.map((network) => (
+            <tr key={network.id}>
+              <td>{network.mac}</td>
+              <td>{network.last_ip ?? "-"}</td>
+              <td>{network.vendor ?? "-"}</td>
+              <td>{network.interface_type}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </section>
   );
 }

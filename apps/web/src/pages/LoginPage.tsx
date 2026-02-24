@@ -1,5 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -18,15 +20,17 @@ export function LoginPage() {
   }
 
   return (
-    <main className="container">
-      <h1>IoT Sentinel</h1>
-      <form onSubmit={onSubmit} className="card">
+    <main className="login-shell">
+      <form onSubmit={onSubmit} className="login-card">
+        <img src="/brand/logo.png" alt="IoT Sentinel" className="login-logo" />
+        <h1>IoT Sentinel</h1>
+        <p>Plataforma de gerenciamento e monitoramento IoT</p>
         <label>Email</label>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input value={email} onChange={(e) => setEmail(e.target.value)} />
         <label>Senha</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         {error && <p className="error">{error}</p>}
-        <button type="submit">Entrar</button>
+        <Button type="submit">Entrar</Button>
       </form>
     </main>
   );

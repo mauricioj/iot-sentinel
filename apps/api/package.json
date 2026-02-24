@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm exec tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "db:migrate": "sequelize-cli db:migrate --config sequelize-cli.config.cjs --migrations-path migrations"
   },
