@@ -5,8 +5,10 @@ import { DeviceDetail } from "../api/types";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Table } from "../components/ui/Table";
 import { Badge } from "../components/ui/Badge";
+import { useI18n } from "../i18n";
 
 export function DeviceDetailPage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const device = useQuery({
     queryKey: ["device", id],
@@ -16,15 +18,15 @@ export function DeviceDetailPage() {
   return (
     <section>
       <PageHeader
-        title={device.data?.name ?? "Device Detail"}
-        subtitle="Informacoes detalhadas e interfaces de rede"
-        actions={<Link to="/devices">Back</Link>}
+        title={device.data?.name ?? t("deviceDetail.defaultTitle")}
+        subtitle={t("deviceDetail.subtitle")}
+        actions={<Link to="/devices">{t("deviceDetail.back")}</Link>}
       />
       <div className="card">
         <p>
-          Status: <Badge>{device.data?.status ?? "unknown"}</Badge>
+          {t("deviceDetail.status")}: <Badge>{device.data?.status ?? t("deviceDetail.unknown")}</Badge>
         </p>
-        <p>{device.data?.notes ?? "Sem notas"}</p>
+        <p>{device.data?.notes ?? t("deviceDetail.noNotes")}</p>
       </div>
 
       <Table>
@@ -32,8 +34,8 @@ export function DeviceDetailPage() {
           <tr>
             <th>MAC</th>
             <th>IP</th>
-            <th>Vendor</th>
-            <th>Type</th>
+            <th>{t("discoveredHosts.table.vendor")}</th>
+            <th>{t("deviceDetail.table.type")}</th>
           </tr>
         </thead>
         <tbody>

@@ -90,6 +90,28 @@ a {
   object-fit: contain;
 }
 
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.language-icon {
+  line-height: 1;
+}
+
+.language-switch select {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: 0;
+  cursor: pointer;
+}
+
 .content {
   padding: 24px;
 }

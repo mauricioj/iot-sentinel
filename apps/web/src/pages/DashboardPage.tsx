@@ -5,8 +5,10 @@ import { locationsApi } from "../api/locationsApi";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Callout } from "../components/ui/Callout";
 import { Button } from "../components/ui/Button";
+import { useI18n } from "../i18n";
 
 export function DashboardPage() {
+  const { t } = useI18n();
   const deviceTypesQuery = useQuery({ queryKey: ["device-types"], queryFn: deviceTypesApi.list });
   const locationsQuery = useQuery({ queryKey: ["locations"], queryFn: locationsApi.list });
 
@@ -15,26 +17,26 @@ export function DashboardPage() {
 
   return (
     <section>
-      <PageHeader title="Dashboard" subtitle="Visao geral do ambiente IoT Sentinel" />
+      <PageHeader title={t("layout.nav.dashboard")} subtitle={t("dashboard.subtitle")} />
       {noDeviceTypes || noLocations ? (
-        <Callout title="Voce ainda nao cadastrou Device Types e Locations.">
+        <Callout title={t("dashboard.empty.title")}>
           <div className="row-inline">
             <Link to="/device-types">
-              <Button>Criar Device Type</Button>
+              <Button>{t("dashboard.empty.createDeviceType")}</Button>
             </Link>
             <Link to="/locations">
-              <Button variant="ghost">Criar Location</Button>
+              <Button variant="ghost">{t("dashboard.empty.createLocation")}</Button>
             </Link>
           </div>
         </Callout>
       ) : (
         <div className="card-grid">
           <article className="card">
-            <h3>Device Types</h3>
+            <h3>{t("dashboard.stats.deviceTypes")}</h3>
             <p>{deviceTypesQuery.data?.length ?? 0}</p>
           </article>
           <article className="card">
-            <h3>Locations</h3>
+            <h3>{t("dashboard.stats.locations")}</h3>
             <p>{locationsQuery.data?.length ?? 0}</p>
           </article>
         </div>

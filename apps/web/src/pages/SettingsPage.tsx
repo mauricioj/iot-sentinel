@@ -5,8 +5,10 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { Table } from "../components/ui/Table";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
+import { useI18n } from "../i18n";
 
 export function SettingsPage() {
+  const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
@@ -27,7 +29,7 @@ export function SettingsPage() {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) {
-      alert("Nome do building e obrigatorio.");
+      alert(t("settings.nameRequired"));
       return;
     }
     createMutation.mutate();
@@ -35,15 +37,15 @@ export function SettingsPage() {
 
   return (
     <section>
-      <PageHeader title="Settings" subtitle="Gerenciamento de Buildings" />
+      <PageHeader title={t("layout.nav.settings")} subtitle={t("settings.subtitle")} />
       <div className="card">
         <form className="form-grid" onSubmit={onSubmit}>
-          <label>Building Name</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Matriz - Bloco A" />
-          <label>Notes</label>
-          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />
+          <label>{t("settings.buildingName")}</label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("settings.examplePlaceholder")} />
+          <label>{t("settings.notes")}</label>
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("settings.notesOptional")} />
           <div className="row-inline">
-            <Button type="submit">Create Building</Button>
+            <Button type="submit">{t("settings.createBuilding")}</Button>
           </div>
         </form>
       </div>
@@ -51,9 +53,9 @@ export function SettingsPage() {
       <Table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Notes</th>
-            <th>Updated</th>
+            <th>{t("common.table.name")}</th>
+            <th>{t("settings.notes")}</th>
+            <th>{t("settings.table.updated")}</th>
           </tr>
         </thead>
         <tbody>
@@ -61,7 +63,7 @@ export function SettingsPage() {
             <tr key={building.id}>
               <td>{building.name}</td>
               <td>{building.notes ?? "-"}</td>
-              <td>{new Date(building.updated_at).toLocaleString()}</td>
+              <td>{new Date(building.updated_at).toLocaleString(locale)}</td>
             </tr>
           ))}
         </tbody>

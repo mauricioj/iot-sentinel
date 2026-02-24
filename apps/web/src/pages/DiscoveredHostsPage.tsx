@@ -7,8 +7,10 @@ import { Button } from "../components/ui/Button";
 import { Table } from "../components/ui/Table";
 import { Callout } from "../components/ui/Callout";
 import { Badge } from "../components/ui/Badge";
+import { useI18n } from "../i18n";
 
 export function DiscoveredHostsPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const hosts = useQuery({
@@ -42,17 +44,17 @@ export function DiscoveredHostsPage() {
 
   return (
     <section>
-      <PageHeader title="Discovered Hosts" subtitle="Hosts encontrados por scans" />
+      <PageHeader title={t("layout.nav.discoveredHosts")} subtitle={t("discoveredHosts.subtitle")} />
 
       {!types.data?.length || !locations.data?.length ? (
-        <Callout title="Dependencias pendentes">
-          <p>Para registrar hosts, crie ao menos 1 Device Type e 1 Location.</p>
+        <Callout title={t("discoveredHosts.dependencies.title")}>
+          <p>{t("discoveredHosts.dependencies.body")}</p>
           <div className="row-inline">
             <Link to="/device-types">
-              <Button>Criar Device Type</Button>
+              <Button>{t("discoveredHosts.createDeviceType")}</Button>
             </Link>
             <Link to="/locations">
-              <Button variant="ghost">Criar Location</Button>
+              <Button variant="ghost">{t("discoveredHosts.createLocation")}</Button>
             </Link>
           </div>
         </Callout>
@@ -62,11 +64,11 @@ export function DiscoveredHostsPage() {
         <thead>
           <tr>
             <th>IP</th>
-            <th>Hostname</th>
-            <th>Vendor</th>
+            <th>{t("discoveredHosts.table.hostname")}</th>
+            <th>{t("discoveredHosts.table.vendor")}</th>
             <th>MAC</th>
-            <th>Status</th>
-            <th>Action</th>
+            <th>{t("devices.table.status")}</th>
+            <th>{t("devices.table.action")}</th>
           </tr>
         </thead>
         <tbody>
@@ -76,13 +78,13 @@ export function DiscoveredHostsPage() {
               <td>{h.hostname ?? "-"}</td>
               <td>{h.vendor ?? "-"}</td>
               <td>{h.mac ?? "-"}</td>
-              <td>{h.registered_device_id ? <Badge>Registered</Badge> : <Badge>Pending</Badge>}</td>
+              <td>{h.registered_device_id ? <Badge>{t("discoveredHosts.registered")}</Badge> : <Badge>{t("discoveredHosts.pending")}</Badge>}</td>
               <td>
                 <Button
                   disabled={Boolean(h.registered_device_id) || !types.data?.length || !locations.data?.length}
                   onClick={() => registerMutation.mutate(h.id)}
                 >
-                  {h.registered_device_id ? "Registered" : "Register"}
+                  {h.registered_device_id ? t("discoveredHosts.registered") : t("discoveredHosts.register")}
                 </Button>
               </td>
             </tr>

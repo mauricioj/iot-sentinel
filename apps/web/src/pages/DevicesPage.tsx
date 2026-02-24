@@ -5,8 +5,10 @@ import { Device } from "../api/types";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Table } from "../components/ui/Table";
 import { Badge } from "../components/ui/Badge";
+import { useI18n } from "../i18n";
 
 export function DevicesPage() {
+  const { locale, t } = useI18n();
   const devices = useQuery({
     queryKey: ["devices"],
     queryFn: () => api.get<Device[]>("/devices")
@@ -14,14 +16,14 @@ export function DevicesPage() {
 
   return (
     <section>
-      <PageHeader title="Devices" subtitle="Inventario de dispositivos registrados" />
+      <PageHeader title={t("layout.nav.devices")} subtitle={t("devices.subtitle")} />
       <Table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Last Seen</th>
-            <th>Action</th>
+            <th>{t("devices.table.name")}</th>
+            <th>{t("devices.table.status")}</th>
+            <th>{t("devices.table.lastSeen")}</th>
+            <th>{t("devices.table.action")}</th>
           </tr>
         </thead>
         <tbody>
@@ -31,9 +33,9 @@ export function DevicesPage() {
               <td>
                 <Badge>{d.status}</Badge>
               </td>
-              <td>{d.last_seen_at ? new Date(d.last_seen_at).toLocaleString() : "-"}</td>
+              <td>{d.last_seen_at ? new Date(d.last_seen_at).toLocaleString(locale) : "-"}</td>
               <td>
-                <Link to={`/devices/${d.id}`}>Details</Link>
+                <Link to={`/devices/${d.id}`}>{t("devices.table.details")}</Link>
               </td>
             </tr>
           ))}

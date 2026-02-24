@@ -1,4 +1,5 @@
 import { clearTokens, getAccessToken, getRefreshToken, setAccessToken } from "./auth";
+import { getStoredLocale, translateBackendMessage } from "../i18n/messages";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -10,9 +11,11 @@ async function request<T>(
   body?: unknown,
   retry = true
 ): Promise<T> {
+  const locale = getStoredLocale();
   const accessToken = getAccessToken();
   const headers: HeadersInit = {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "Accept-Language": locale
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
@@ -27,7 +30,7 @@ async function request<T>(
     if (!refreshToken) {
       clearTokens();
       window.location.href = "/login";
-      throw new Error("Unauthorized");
+      throw new Error(translateBackendMessage("Unauthorized", locale));
     }
 
     const refreshed = await fetch(`${API_URL}/auth/refresh`, {
@@ -38,7 +41,7 @@ async function request<T>(
     if (!refreshed.ok) {
       clearTokens();
       window.location.href = "/login";
-      throw new Error("Session expired");
+      throw new Error(translateBackendMessage("Session expired", locale));
     }
 
     const data = (await refreshed.json()) as { accessToken: string };
@@ -47,12 +50,12 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    let message = "Request failed";
+    let message = translateBackendMessage("Request failed", locale);
     try {
       const errorData = (await response.json()) as { message?: string };
-      message = errorData.message ?? message;
+      message = translateBackendMessage(errorData.message ?? "Request failed", locale);
     } catch {
-      message = await response.text();
+      message = translateBackendMessage(await response.text(), locale);
     }
     throw new Error(message);
   }

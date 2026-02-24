@@ -10,6 +10,7 @@ import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Table } from "../components/ui/Table";
 import { Callout } from "../components/ui/Callout";
+import { useI18n } from "../i18n";
 
 type FormState = {
   building_id: string;
@@ -26,6 +27,7 @@ function toFormState(location?: Location): FormState {
 }
 
 export function LocationsPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Location | null>(null);
@@ -107,11 +109,11 @@ export function LocationsPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!form.building_id) {
-      setError("Selecione um building.");
+      setError(t("locations.buildingRequired"));
       return;
     }
     if (!form.path.trim()) {
-      setError("Path e obrigatorio.");
+      setError(t("locations.pathRequired"));
       return;
     }
 
@@ -131,20 +133,20 @@ export function LocationsPage() {
   return (
     <section>
       <PageHeader
-        title="Locations"
-        subtitle="Mapeie cada localizacao fisica"
+        title={t("layout.nav.locations")}
+        subtitle={t("locations.subtitle")}
         actions={
           <Button onClick={openNew} disabled={noBuildings}>
-            New Location
+            {t("locations.new")}
           </Button>
         }
       />
 
       {noBuildings ? (
-        <Callout title="Crie um Building primeiro">
-          <p>Sem buildings cadastrados, nao e possivel criar locations.</p>
+        <Callout title={t("locations.callout.title")}>
+          <p>{t("locations.callout.body")}</p>
           <Link to="/settings">
-            <Button variant="ghost">Ir para Settings</Button>
+            <Button variant="ghost">{t("locations.gotoSettings")}</Button>
           </Link>
         </Callout>
       ) : null}
@@ -152,10 +154,10 @@ export function LocationsPage() {
       <Table>
         <thead>
           <tr>
-            <th>Path</th>
-            <th>Building</th>
-            <th>Details</th>
-            <th>Actions</th>
+            <th>{t("locations.table.path")}</th>
+            <th>{t("locations.table.building")}</th>
+            <th>{t("locations.table.details")}</th>
+            <th>{t("common.table.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -167,10 +169,10 @@ export function LocationsPage() {
               <td>
                 <div className="row-inline">
                   <Button variant="ghost" onClick={() => openEdit(row)}>
-                    Edit
+                    {t("common.edit")}
                   </Button>
                   <Button variant="danger" onClick={() => deleteMutation.mutate(row.id)}>
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </div>
               </td>
@@ -179,15 +181,15 @@ export function LocationsPage() {
         </tbody>
       </Table>
 
-      <Modal title={editing ? "Edit Location" : "New Location"} open={open} onClose={handleClose}>
+      <Modal title={editing ? t("locations.modal.edit") : t("locations.modal.new")} open={open} onClose={handleClose}>
         <form className="form-grid" onSubmit={onSubmit}>
-          <label>Building</label>
+          <label>{t("locations.field.building")}</label>
           <select
             className="input"
             value={form.building_id}
             onChange={(e) => setForm((prev) => ({ ...prev, building_id: e.target.value }))}
           >
-            <option value="">Select building</option>
+            <option value="">{t("locations.selectBuilding")}</option>
             {buildingsQuery.data?.map((building) => (
               <option key={building.id} value={building.id}>
                 {building.name}
@@ -195,18 +197,18 @@ export function LocationsPage() {
             ))}
           </select>
 
-          <label>Path</label>
+          <label>{t("locations.field.path")}</label>
           <Input value={form.path} onChange={(e) => setForm((prev) => ({ ...prev, path: e.target.value }))} />
 
-          <label>Details</label>
+          <label>{t("locations.field.details")}</label>
           <Input value={form.details} onChange={(e) => setForm((prev) => ({ ...prev, details: e.target.value }))} />
 
           {error ? <p className="error">{error}</p> : null}
 
           <div className="row-inline">
-            <Button type="submit">{editing ? "Save Changes" : "Create"}</Button>
+            <Button type="submit">{editing ? t("common.saveChanges") : t("common.create")}</Button>
             <Button type="button" variant="ghost" onClick={handleClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </form>

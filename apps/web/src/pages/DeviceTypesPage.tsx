@@ -7,6 +7,7 @@ import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { Input } from "../components/ui/Input";
 import { Table } from "../components/ui/Table";
+import { useI18n } from "../i18n";
 
 type FormState = {
   name: string;
@@ -33,6 +34,7 @@ function parseProtocols(value: string): string[] | null {
 }
 
 export function DeviceTypesPage() {
+  const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DeviceType | null>(null);
@@ -77,7 +79,7 @@ export function DeviceTypesPage() {
   });
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
-  const modalTitle = useMemo(() => (editing ? "Edit Device Type" : "New Device Type"), [editing]);
+  const modalTitle = useMemo(() => (editing ? t("deviceTypes.edit") : t("deviceTypes.new")), [editing, t]);
 
   function handleClose() {
     setOpen(false);
@@ -103,17 +105,17 @@ export function DeviceTypesPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError("Name e obrigatorio.");
+      setError(t("deviceTypes.nameRequired"));
       return;
     }
     if (!form.category.trim()) {
-      setError("Category e obrigatorio.");
+      setError(t("deviceTypes.categoryRequired"));
       return;
     }
 
     const parsedProtocols = parseProtocols(form.defaultProtocolsText);
     if (!parsedProtocols) {
-      setError("Default Protocols deve ser um JSON array valido.");
+      setError(t("deviceTypes.protocolsInvalid"));
       return;
     }
 
@@ -133,17 +135,17 @@ export function DeviceTypesPage() {
   return (
     <section>
       <PageHeader
-        title="Device Types"
-        subtitle="Cadastre os tipos de dispositivos suportados"
-        actions={<Button onClick={handleOpenNew}>New Device Type</Button>}
+        title={t("layout.nav.deviceTypes")}
+        subtitle={t("deviceTypes.subtitle")}
+        actions={<Button onClick={handleOpenNew}>{t("deviceTypes.new")}</Button>}
       />
       <Table>
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Updated At</th>
-            <th>Actions</th>
+            <th>{t("common.table.name")}</th>
+            <th>{t("common.table.category")}</th>
+            <th>{t("common.table.updatedAt")}</th>
+            <th>{t("common.table.actions")}</th>
           </tr>
         </thead>
         <tbody>
@@ -151,14 +153,14 @@ export function DeviceTypesPage() {
             <tr key={row.id}>
               <td>{row.name}</td>
               <td>{row.category}</td>
-              <td>{new Date(row.updated_at).toLocaleString()}</td>
+              <td>{new Date(row.updated_at).toLocaleString(locale)}</td>
               <td>
                 <div className="row-inline">
                   <Button variant="ghost" onClick={() => handleOpenEdit(row)}>
-                    Edit
+                    {t("common.edit")}
                   </Button>
                   <Button variant="danger" onClick={() => deleteMutation.mutate(row.id)}>
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </div>
               </td>
@@ -169,13 +171,13 @@ export function DeviceTypesPage() {
 
       <Modal title={modalTitle} open={open} onClose={handleClose}>
         <form className="form-grid" onSubmit={onSubmit}>
-          <label>Name</label>
+          <label>{t("deviceTypes.fieldName")}</label>
           <Input value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} />
 
-          <label>Category</label>
+          <label>{t("deviceTypes.fieldCategory")}</label>
           <Input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} />
 
-          <label>Default Protocols (JSON array)</label>
+          <label>{t("deviceTypes.fieldDefaultProtocols")}</label>
           <Input
             value={form.defaultProtocolsText}
             onChange={(e) => setForm((prev) => ({ ...prev, defaultProtocolsText: e.target.value }))}
@@ -185,10 +187,10 @@ export function DeviceTypesPage() {
 
           <div className="row-inline">
             <Button type="submit" disabled={isSaving}>
-              {editing ? "Save Changes" : "Create"}
+              {editing ? t("common.saveChanges") : t("common.create")}
             </Button>
             <Button type="button" variant="ghost" onClick={handleClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </form>
