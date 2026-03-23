@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { SettingsModule } from './settings/settings.module';
 import { LocalsModule } from './locals/locals.module';
+import { NetworksModule } from './networks/networks.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { LocalsModule } from './locals/locals.module';
     AuthModule,
     SettingsModule,
     LocalsModule,
+    NetworksModule,
   ],
 })
 export class AppModule {}
