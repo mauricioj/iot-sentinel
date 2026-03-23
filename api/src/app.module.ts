@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BullModule } from '@nestjs/bull';
 import { CommonModule } from './common/common.module';
+import { CryptoModule } from './crypto/crypto.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthModule } from './health/health.module';
       inject: [ConfigService],
     }),
     CommonModule,
+    CryptoModule,
     HealthModule,
   ],
 })
