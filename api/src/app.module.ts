@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { SettingsModule } from './settings/settings.module';
 import { LocalsModule } from './locals/locals.module';
 import { NetworksModule } from './networks/networks.module';
+import { GroupsModule } from './groups/groups.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { NetworksModule } from './networks/networks.module';
     SettingsModule,
     LocalsModule,
     NetworksModule,
+    GroupsModule,
   ],
 })
 export class AppModule {}
