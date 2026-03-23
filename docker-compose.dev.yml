@@ -1,0 +1,9 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./api/src:/app/src
+      - api_secrets:/data/secrets
+    command: npm run start:dev
