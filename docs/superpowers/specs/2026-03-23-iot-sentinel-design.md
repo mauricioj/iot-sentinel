@@ -32,6 +32,18 @@ IoT Sentinel is an open-source, Docker-based platform for managing and catalogin
 - Simple enough: 5 containers, one `docker-compose up`
 - Python worker handles network scanning where Python excels (nmap, scapy)
 
+### Worker-to-API Communication
+
+The Python worker communicates exclusively via Redis/Bull queues. It never calls the NestJS API over HTTP and never writes to MongoDB directly.
+
+**Flow:**
+1. NestJS enqueues a job in Bull (e.g., `scan:discovery`)
+2. Python worker consumes the job from Redis
+3. Worker executes the scan and writes the result as the Bull job's completion payload
+4. NestJS listens for Bull job completion events and processes the results (MAC matching, status updates, notification triggers)
+
+This keeps all business logic in the NestJS service layer while the worker remains a stateless executor.
+
 ### Tech Stack
 
 | Component | Technology |
@@ -85,7 +97,7 @@ Represents any network device or service.
 | groupIds | ObjectId[] | Ref → Group[] |
 | name | string | e.g., "Camera Garagem" |
 | type | enum | camera, switch, sensor, nvr, vm, service, plc, other |
-| macAddress | string | Primary stable identifier |
+| macAddress | string | Primary stable identifier (unique) |
 | ipAddress | string | Last known IP |
 | hostname | string | Discovered or manual |
 | status | enum | online, offline, unknown, discovered |
@@ -119,11 +131,13 @@ Represents any network device or service.
 
 **Credentials (embedded, encrypted):**
 
+All credential fields are encrypted with AES-256-GCM using the instance `ENCRYPTION_KEY`.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| username | string | Encrypted |
-| password | string | Encrypted with AES-256 |
-| notes | string | Optional, encrypted |
+| username | string | Encrypted with AES-256-GCM |
+| password | string | Encrypted with AES-256-GCM |
+| notes | string | Optional, encrypted with AES-256-GCM |
 
 ### Group
 
@@ -160,11 +174,22 @@ Records scan history.
 | networkId | ObjectId | Ref → Network |
 | type | enum | discovery, status_check, deep_scan |
 | status | enum | queued, running, completed, failed |
+| triggeredBy | enum | manual, scheduled |
+| userId | ObjectId | Ref → User (who triggered, null if scheduled) |
 | startedAt | Date | When execution began |
 | completedAt | Date | When execution finished |
-| results | object | Things found, changes detected |
-| triggeredBy | enum | manual, scheduled |
+| results | DiscoveredHost[] | Array of discovered hosts (see below) |
 | createdAt | Date | Auto-generated |
+
+**DiscoveredHost (embedded in ScanJob.results):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| macAddress | string | MAC address |
+| ipAddress | string | IP address |
+| hostname | string | Discovered hostname |
+| ports | Port[] | Open ports with service/version info |
+| isNew | boolean | True if MAC was not previously registered |
 
 ### NotificationRule
 
@@ -215,6 +240,21 @@ System-wide configuration stored in MongoDB.
 | backup.retention | number | Keep last N backups |
 | backup.destination | enum | local, google_drive, s3 |
 | monitor.statusCheckInterval | number | Seconds between ping sweeps |
+| scanner.maxConcurrentScans | number | Max simultaneous scans (default: 1) |
+| scanner.cooldownSeconds | number | Min interval between scans of same network (default: 60) |
+
+### Database Indexes
+
+| Collection | Index | Type | Purpose |
+|------------|-------|------|---------|
+| Thing | `macAddress` | unique | Primary device identifier |
+| Thing | `networkId` | regular | Filter things by network |
+| Thing | `status` | regular | Filter by online/offline |
+| Thing | `groupIds` | regular | Filter by group |
+| Network | `localId` | regular | List networks per local |
+| Notification | `read` | regular | Unread notification queries |
+| Notification | `createdAt` | regular | Notification history sorting |
+| ScanJob | `networkId, status` | compound | Active scans per network |
 
 ### Data Hierarchy
 
@@ -227,6 +267,10 @@ Local (casa, empresa)
 ```
 
 ## API Design
+
+### Versioning
+
+All endpoints are prefixed with `/api/v1/`. This allows future breaking changes via `/api/v2/` without disrupting existing clients (mobile, CLI, integrations).
 
 ### NestJS Modules
 
@@ -244,7 +288,8 @@ src/
 ├── backup/        → Export/import, scheduled backups
 ├── settings/      → System config, setup wizard
 ├── crypto/        → Encrypt/decrypt credentials service
-└── common/        → Filters, interceptors, base DTOs
+├── health/        → Health check and readiness endpoints
+└── common/        → Filters, interceptors, base DTOs, pagination
 ```
 
 ### Layer Architecture (per module)
@@ -274,28 +319,84 @@ src/<module>/
 - One module per domain — a service never imports another module's repository, always consumes via exported service
 - Dependency injection everywhere — easy to test (mock repository in service, mock service in controller)
 
+### Pagination
+
+All list endpoints support pagination with a standard contract:
+
+**Request:** `?page=1&limit=20` (defaults: page=1, limit=20, max limit=100)
+
+**Response:**
+```json
+{
+  "data": [],
+  "meta": {
+    "total": 150,
+    "page": 1,
+    "limit": 20,
+    "pages": 8
+  }
+}
+```
+
 ### Endpoints
 
 | Resource | Endpoints |
 |----------|-----------|
-| Auth | `POST /auth/login`, `POST /auth/refresh` |
-| Users | CRUD `/users` |
-| Locals | CRUD `/locals` |
-| Networks | CRUD `/locals/:id/networks` |
-| Things | CRUD `/things`, `GET /things/search?q=`, `GET /things?groupId=&networkId=&status=` |
-| Groups | CRUD `/groups`, `GET /groups/:id/things` |
-| Scanner | `POST /scanner/discover`, `GET /scanner/jobs`, `GET /scanner/jobs/:id` |
-| Monitor | `GET /monitor/status`, `POST /monitor/check/:thingId` |
-| Notifications | CRUD `/notifications/rules`, `GET /notifications`, `PATCH /notifications/:id/read` |
-| Backup | `POST /backup/export`, `POST /backup/restore`, `GET /backup/history` |
-| Settings | `GET /settings`, `PATCH /settings` |
-| Setup | `GET /setup/status`, `POST /setup/complete` |
-| Dashboard | `GET /dashboard/stats` |
+| Health | `GET /health`, `GET /health/ready` |
+| Auth | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh` |
+| Users | CRUD `/api/v1/users` |
+| Locals | CRUD `/api/v1/locals` |
+| Networks | CRUD `/api/v1/locals/:id/networks`, `GET /api/v1/networks` (global list) |
+| Things | CRUD `/api/v1/things`, `GET /api/v1/things/search?q=`, `GET /api/v1/things?groupId=&networkId=&status=&localId=` |
+| Groups | CRUD `/api/v1/groups`, `GET /api/v1/groups/:id/things` |
+| Scanner | `POST /api/v1/scanner/discover`, `GET /api/v1/scanner/jobs`, `GET /api/v1/scanner/jobs/:id` |
+| Monitor | `GET /api/v1/monitor/status`, `POST /api/v1/monitor/check/:thingId` |
+| Notifications | CRUD `/api/v1/notifications/rules`, `GET /api/v1/notifications`, `PATCH /api/v1/notifications/:id/read` |
+| Backup | `POST /api/v1/backup/export`, `POST /api/v1/backup/restore`, `GET /api/v1/backup/history` |
+| Settings | `GET /api/v1/settings`, `PATCH /api/v1/settings` |
+| Setup | `GET /api/v1/setup/status`, `POST /api/v1/setup/complete` |
+| Dashboard | `GET /api/v1/dashboard/stats` |
+
+**Notes:**
+- `GET /api/v1/networks` provides a global list across all locals (useful for dashboard dropdowns)
+- `GET /api/v1/things?localId=` allows filtering things by local without traversing Network first
+- Health endpoints are NOT versioned (infrastructure concern, not API contract)
+
+### WebSocket Gateway
+
+Real-time push notifications via Socket.IO (built-in NestJS support).
+
+**Endpoint:** `ws://localhost:4000/ws`
+
+**Authentication:** JWT token passed in the handshake `auth` payload. Invalid or expired tokens reject the connection.
+
+**Events (server → client):**
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `thing:status_changed` | `{ thingId, name, previousStatus, newStatus, timestamp }` | Thing went online/offline |
+| `scan:started` | `{ jobId, networkId, type }` | Scan job began execution |
+| `scan:completed` | `{ jobId, networkId, newThings, updatedThings }` | Scan finished with results summary |
+| `scan:failed` | `{ jobId, networkId, error }` | Scan job failed |
+| `notification:new` | `{ notificationId, type, message, thingId }` | New notification created |
+
+**Reconnection:** Client implements exponential backoff (1s, 2s, 4s, 8s, max 30s). Socket.IO handles this natively.
+
+**Owner module:** `notifications/` module owns the WebSocket gateway, other modules emit events through the `NotificationService`.
+
+### Scanner Rate Limiting
+
+To prevent network disruption and resource exhaustion:
+
+- **Max concurrent scans:** 1 per network (configurable via Settings)
+- **Cooldown:** Minimum 60 seconds between scans of the same network (configurable)
+- **Global queue depth:** Maximum 10 pending scan jobs
+- Duplicate scan requests for the same network while a scan is running are rejected with `409 Conflict`
 
 **Cross-cutting:**
-- JWT authentication: access token (15min) + refresh token (7d)
-- Swagger/OpenAPI auto-generated
-- WebSocket gateway for real-time push (status changes, scan completion, notifications)
+- JWT authentication: access token (15min) + refresh token (7d, stored in MongoDB for revocation support)
+- Swagger/OpenAPI auto-generated at `/api/docs`
+- CORS configured for frontend origin only
 
 ## Python Worker (Scanner)
 
@@ -313,10 +414,13 @@ src/<module>/
 NestJS enqueues job {networkId, cidr: "192.168.10.0/24"}
     → Worker consumes from Redis/Bull
     → nmap -sn -sV <cidr>
-    → Publishes result: [{mac, ip, hostname, ports[], services[]}]
-    → NestJS receives, matches MAC against existing things
+    → Writes result as Bull job completion payload:
+      [{mac, ip, hostname, ports[], services[]}]
+    → NestJS listens for job completion event
+    → NestJS processes results (in service layer):
         → Known MAC: updates IP, ports, status, lastSeenAt
         → New MAC: creates thing with status "discovered" (pending user action)
+        → Triggers notifications if status changed
 ```
 
 ### Docker Configuration
@@ -324,6 +428,8 @@ NestJS enqueues job {networkId, cidr: "192.168.10.0/24"}
 - Runs with `network_mode: host` (required for nmap to see the host's real network)
 - `NET_ADMIN` capability for raw sockets
 - Status checks are lightweight (ping only) to avoid network congestion
+
+**Platform limitation:** `network_mode: host` only works on Linux Docker hosts. On Docker Desktop (macOS/Windows), the worker runs inside a VM and cannot see the host network. For development on macOS/Windows, the worker operates in mock mode with simulated scan results. Production scanning requires a Linux host (bare metal, VM, or cloud instance).
 
 ## Frontend (Next.js)
 
@@ -395,7 +501,7 @@ Generates a password-protected `.json.gz` file containing:
 ```
 Credentials (encrypted with instance ENCRYPTION_KEY)
   → Decrypt
-  → Re-encrypt with user-provided backup password (AES-256)
+  → Re-encrypt with user-provided backup password (AES-256-GCM)
   → Save to backup file
 ```
 
@@ -440,12 +546,31 @@ Adding a new channel = implementing one interface. No architecture changes neede
 
 ## Security
 
-- JWT-based authentication with access + refresh tokens
-- Passwords hashed with bcrypt
-- Device credentials encrypted with AES-256
-- `ENCRYPTION_KEY` auto-generated on first boot, stored in persistent volume
-- Backup files protected with user-defined password
+### Authentication
+
+- JWT-based authentication with access token (15min) + refresh token (7d)
+- Refresh tokens stored in MongoDB for revocation support (user logout invalidates all refresh tokens)
+- Passwords hashed with bcrypt (12 rounds)
+
+### Credential Encryption
+
+Device credentials (username, password, notes) are encrypted with AES-256-GCM.
+
+**Key management:**
+- `ENCRYPTION_KEY` is generated on first boot via `crypto.randomBytes(32)` (256-bit random key)
+- Stored at `/data/secrets/encryption.key` inside the API container's persistent volume, with file permissions `0600`
+- The key is loaded into memory on API startup and never logged or exposed in environment variables
+- **Warning:** If the persistent volume is lost and no backup exists, all stored device credentials become unrecoverable. The backup/restore mechanism is the recovery path.
+- **Key rotation:** Not supported in v1. Future versions may implement re-encryption with a new key via a maintenance command.
+
+### Network Security
+
 - CORS configured for frontend origin only
+- MongoDB requires authentication (username/password via environment variables)
+
+### TLS/HTTPS
+
+The application runs on HTTP internally. For production, users should place a reverse proxy (nginx, Traefik, Caddy) in front with TLS termination. The `docker-compose.yml` includes an optional commented-out Traefik service as a reference.
 
 ## Docker & Deploy
 
@@ -456,8 +581,8 @@ Adding a new channel = implementing one interface. No architecture changes neede
 | frontend | Next.js | 3000 | |
 | api | NestJS | 4000 | Waits for mongodb, redis |
 | worker | Python + nmap | — | network_mode: host, NET_ADMIN |
-| mongodb | mongo:7 | 27017 | Named volume for persistence |
-| redis | redis:7-alpine | 6379 | Named volume for persistence |
+| mongodb | mongo:7 | 27017 | Named volume, authenticated |
+| redis | redis:7-alpine | 6379 | Named volume |
 
 ### Monorepo Structure
 
@@ -480,16 +605,29 @@ iot-sentinel/
 3. Complete wizard (language, admin user, basic config)
 4. Register first Local → Network → Run scan → Things appear
 
-Minimal `.env` with infrastructure-only defaults:
+`.env.example` with sensible defaults:
 ```
-MONGODB_URI=mongodb://mongodb:27017/iot-sentinel
+# Infrastructure
+MONGODB_URI=mongodb://sentinel:sentinel_secret@mongodb:27017/iot-sentinel?authSource=admin
 REDIS_URL=redis://redis:6379
+
+# MongoDB root credentials (used by mongo container on first boot)
+MONGO_INITDB_ROOT_USERNAME=sentinel
+MONGO_INITDB_ROOT_PASSWORD=sentinel_secret
+
+# API
+API_PORT=4000
+FRONTEND_URL=http://localhost:3000
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:4000
 ```
 
 ### Development
 
 - `docker-compose.dev.yml` with volume mounts and watch mode for hot reload
 - Multi-stage Dockerfiles for lean production images
+- Worker mock mode on non-Linux platforms for development
 
 ## Testing & Quality
 
