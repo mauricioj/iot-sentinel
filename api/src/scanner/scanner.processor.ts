@@ -106,6 +106,8 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
             macAddress: host.macAddress || undefined,
             ipAddress: host.ipAddress,
             hostname: host.hostname || '',
+            status: ThingStatus.DISCOVERED,
+            lastSeenAt: new Date(),
             ports: host.ports || [],
           } as any);
           processedHosts.push({ ...host, isNew: true });
