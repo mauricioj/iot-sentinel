@@ -64,7 +64,7 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      REDIS_URL: ${REDIS_URL}
+      REDIS_URL: redis://localhost:6379
       SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-false}
     depends_on:
       - redis
