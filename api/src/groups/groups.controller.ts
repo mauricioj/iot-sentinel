@@ -8,13 +8,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
+import { ThingsService } from '../things/things.service';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
 @Controller('api/v1/groups')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(
+    private readonly groupsService: GroupsService,
+    private readonly thingsService: ThingsService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -38,4 +42,10 @@ export class GroupsController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a group' })
   remove(@Param('id') id: string) { return this.groupsService.delete(id); }
+
+  @Get(':id/things')
+  @ApiOperation({ summary: 'List things in a group' })
+  findThings(@Param('id') id: string, @Query() query: PaginationQueryDto) {
+    return this.thingsService.findByGroupId(id, query.page, query.limit);
+  }
 }

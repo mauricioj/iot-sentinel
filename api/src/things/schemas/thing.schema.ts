@@ -99,7 +99,7 @@ export class Thing {
   @Prop({ required: true, enum: ThingType, default: ThingType.OTHER })
   type: ThingType;
 
-  @Prop({ sparse: true, trim: true })
+  @Prop({ trim: true })
   macAddress: string;
 
   @Prop({ default: '' })
