@@ -49,4 +49,11 @@ export class ScannerRepository {
   async countPending(): Promise<number> {
     return this.scanJobModel.countDocuments({ status: ScanStatus.QUEUED }).exec();
   }
+
+  async findRecentByNetworkId(networkId: string): Promise<ScanJobDocument | null> {
+    return this.scanJobModel.findOne({
+      networkId: new Types.ObjectId(networkId),
+      status: { $in: [ScanStatus.QUEUED, ScanStatus.RUNNING] },
+    }).sort({ createdAt: -1 }).exec();
+  }
 }

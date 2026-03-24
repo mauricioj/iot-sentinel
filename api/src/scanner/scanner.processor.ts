@@ -132,13 +132,17 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
    * We need to find the MongoDB scan job either way.
    */
   private async findJobByRedisOrMongoId(id: string): Promise<{ mongoJobId: string; networkId: string } | null> {
-    // Try as MongoDB ID first
-    const directJob = await this.scannerRepository.findById(id);
-    if (directJob) {
-      return { mongoJobId: directJob._id.toString(), networkId: directJob.networkId.toString() };
+    // Check if it looks like a MongoDB ObjectId (24 hex chars) or a Bull Redis ID (numeric)
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+
+    if (isMongoId) {
+      const directJob = await this.scannerRepository.findById(id);
+      if (directJob) {
+        return { mongoJobId: directJob._id.toString(), networkId: directJob.networkId.toString() };
+      }
     }
 
-    // If it's a Bull Redis ID (number), read job data from Redis to get the MongoDB ID
+    // It's a Bull Redis ID — read job data from Redis to get the MongoDB job ID
     try {
       const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
       const reader = new Redis(redisUrl);
@@ -147,15 +151,24 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
 
       if (jobData) {
         const parsed = JSON.parse(jobData);
+        this.logger.log(`Redis job ${id} has data.jobId = ${parsed.jobId}`);
         if (parsed.jobId) {
           const mongoJob = await this.scannerRepository.findById(parsed.jobId);
           if (mongoJob) {
             return { mongoJobId: mongoJob._id.toString(), networkId: mongoJob.networkId.toString() };
           }
         }
+        // Fallback: use networkId from job data directly
+        if (parsed.networkId) {
+          // Find the most recent queued/running job for this network
+          const jobs = await this.scannerRepository.findRecentByNetworkId(parsed.networkId);
+          if (jobs) {
+            return { mongoJobId: jobs._id.toString(), networkId: jobs.networkId.toString() };
+          }
+        }
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      this.logger.error(`Error looking up Redis job ${id}: ${err}`);
     }
 
     return null;
