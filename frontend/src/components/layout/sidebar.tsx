@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Radar,
   Settings,
+  Bell,
 } from 'lucide-react';
 import { SidebarItem } from './sidebar-item';
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/groups', icon: FolderOpen, label: 'Groups' },
   { href: '/map', icon: Network, label: 'Network Map' },
   { href: '/scanner', icon: Radar, label: 'Scanner' },
+  { href: '/notifications', icon: Bell, label: 'Notifications' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
