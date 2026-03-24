@@ -65,7 +65,7 @@ services:
       - NET_ADMIN
     environment:
       REDIS_URL: redis://localhost:6379
-      SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-false}
+      SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-auto}
     depends_on:
       - redis
 
