@@ -14,6 +14,7 @@ import { GroupsModule } from './groups/groups.module';
 import { ThingsModule } from './things/things.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ScannerModule } from './scanner/scanner.module';
+import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ScannerModule } from './scanner/scanner.module';
     ThingsModule,
     DashboardModule,
     ScannerModule,
+    MonitorModule,
   ],
 })
 export class AppModule {}
