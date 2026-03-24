@@ -13,6 +13,7 @@ import { NetworksModule } from './networks/networks.module';
 import { GroupsModule } from './groups/groups.module';
 import { ThingsModule } from './things/things.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ScannerModule } from './scanner/scanner.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     GroupsModule,
     ThingsModule,
     DashboardModule,
+    ScannerModule,
   ],
 })
 export class AppModule {}
