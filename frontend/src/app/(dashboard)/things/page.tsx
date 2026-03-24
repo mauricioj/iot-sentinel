@@ -99,10 +99,21 @@ export default function ThingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await thingsService.create(form);
+      // Strip empty strings so backend doesn't receive invalid ObjectIds
+      const payload: Record<string, unknown> = { name: form.name };
+      if (form.type) payload.type = form.type;
+      if (form.networkId) payload.networkId = form.networkId;
+      if (form.macAddress) payload.macAddress = form.macAddress;
+      if (form.ipAddress) payload.ipAddress = form.ipAddress;
+      const creds = form.credentials;
+      if (creds.username || creds.password || creds.notes) {
+        payload.credentials = creds;
+      }
+
+      const created = await thingsService.create(payload as Partial<Thing>);
       setModalOpen(false);
       setForm({ name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '', credentials: { username: '', password: '', notes: '' } });
-      await fetchThings();
+      router.push(`/things/${created._id}`);
     } catch (err) {
       console.error(err);
     } finally {

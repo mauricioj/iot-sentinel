@@ -87,7 +87,7 @@ export class Credentials {
 
 @Schema({ timestamps: true })
 export class Thing {
-  @Prop({ type: Types.ObjectId, ref: 'Network', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Network', index: true })
   networkId: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Group' }], default: [], index: true })
@@ -96,7 +96,7 @@ export class Thing {
   @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ required: true, enum: ThingType, default: ThingType.OTHER })
+  @Prop({ enum: ThingType, default: ThingType.OTHER })
   type: ThingType;
 
   @Prop({ trim: true })

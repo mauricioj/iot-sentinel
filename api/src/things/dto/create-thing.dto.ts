@@ -29,7 +29,7 @@ class CredentialsDto {
 }
 
 export class CreateThingDto {
-  @ApiProperty() @IsString() networkId: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() networkId?: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional() @IsArray() @IsString({ each: true })
@@ -39,9 +39,9 @@ export class CreateThingDto {
   @IsString() @MinLength(1) @MaxLength(100)
   name: string;
 
-  @ApiProperty({ enum: ThingType })
-  @IsEnum(ThingType)
-  type: ThingType;
+  @ApiPropertyOptional({ enum: ThingType, default: ThingType.OTHER })
+  @IsOptional() @IsEnum(ThingType)
+  type?: ThingType;
 
   @ApiPropertyOptional({ example: 'AA:BB:CC:DD:EE:FF' })
   @IsOptional() @IsString()

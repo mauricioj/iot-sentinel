@@ -17,7 +17,9 @@ export class ThingsService {
   ) {}
 
   async create(dto: CreateThingDto): Promise<Thing> {
-    await this.networksService.findById(dto.networkId);
+    if (dto.networkId) {
+      await this.networksService.findById(dto.networkId);
+    }
     if (dto.credentials) {
       dto.credentials = this.encryptCredentials(dto.credentials);
     }
