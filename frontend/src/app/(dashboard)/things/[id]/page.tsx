@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -38,6 +38,12 @@ export default function ThingDetailPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [savingChannel, setSavingChannel] = useState(false);
+  const [channelForm, setChannelForm] = useState({
+    number: 1, direction: 'output', name: '', type: 'other', description: '',
+  });
 
   const fetchThing = async () => {
     setLoading(true);
@@ -87,6 +93,33 @@ export default function ThingDetailPage() {
     } catch (err) {
       console.error(err);
       setDeleting(false);
+    }
+  };
+
+  const handleAddChannel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingChannel(true);
+    try {
+      const existingChannels = thing?.channels || [];
+      const newChannel = { ...channelForm, number: Number(channelForm.number) };
+      await thingsService.update(id, { channels: [...existingChannels, newChannel] } as any);
+      setChannelModalOpen(false);
+      setChannelForm({ number: existingChannels.length + 2, direction: 'output', name: '', type: 'other', description: '' });
+      await fetchThing();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingChannel(false);
+    }
+  };
+
+  const handleRemoveChannel = async (index: number) => {
+    try {
+      const updatedChannels = (thing?.channels || []).filter((_, i) => i !== index);
+      await thingsService.update(id, { channels: updatedChannels } as any);
+      await fetchThing();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -165,37 +198,73 @@ export default function ThingDetailPage() {
       </Card>
 
       {/* Channels Section */}
-      {thing.channels && thing.channels.length > 0 && (
-        <Card>
-          <CardHeader>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
             <CardTitle>Channels</CardTitle>
-          </CardHeader>
-          <CardContent>
+            <Button size="sm" onClick={() => {
+              setChannelForm({
+                number: (thing.channels?.length || 0) + 1,
+                direction: 'output', name: '', type: 'other', description: '',
+              });
+              setChannelModalOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Channel
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(!thing.channels || thing.channels.length === 0) ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No channels configured. Add channels for multi-output devices like PLCs.
+            </p>
+          ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Number</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">#</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Direction</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+                    <th className="px-4 py-3 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {thing.channels.map((ch, i) => (
                     <tr key={i} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3">{ch.number}</td>
-                      <td className="px-4 py-3">{ch.direction}</td>
-                      <td className="px-4 py-3">{ch.name || '-'}</td>
+                      <td className="px-4 py-3 font-mono">{ch.number}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          ch.direction === 'output' ? 'bg-primary/20 text-primary' :
+                          ch.direction === 'input' ? 'bg-success/20 text-success' :
+                          'bg-warning/20 text-warning'
+                        }`}>
+                          {ch.direction}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium">{ch.name || '-'}</td>
                       <td className="px-4 py-3">{ch.type || '-'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{ch.description || '-'}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleRemoveChannel(i)}
+                          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Remove channel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Ports Section */}
       {thing.ports && thing.ports.length > 0 && (
@@ -330,6 +399,71 @@ export default function ThingDetailPage() {
         message={`Are you sure you want to delete "${thing.name}"? This action cannot be undone.`}
         loading={deleting}
       />
+
+      {/* Add Channel Modal */}
+      <Modal open={channelModalOpen} onClose={() => setChannelModalOpen(false)} title="Add Channel">
+        <form onSubmit={handleAddChannel} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              id="ch-number"
+              label="Channel #"
+              type="number"
+              value={String(channelForm.number)}
+              onChange={(e) => setChannelForm({ ...channelForm, number: Number(e.target.value) })}
+              required
+            />
+            <Select
+              id="ch-direction"
+              label="Direction"
+              options={[
+                { value: 'input', label: 'Input' },
+                { value: 'output', label: 'Output' },
+                { value: 'bidirectional', label: 'Bidirectional' },
+              ]}
+              value={channelForm.direction}
+              onChange={(e) => setChannelForm({ ...channelForm, direction: e.target.value })}
+            />
+          </div>
+          <Input
+            id="ch-name"
+            label="Name"
+            placeholder="e.g., Lamp Hall, Motor Gate"
+            value={channelForm.name}
+            onChange={(e) => setChannelForm({ ...channelForm, name: e.target.value })}
+            required
+          />
+          <Select
+            id="ch-type"
+            label="Type"
+            options={[
+              { value: 'light', label: 'Light' },
+              { value: 'motor', label: 'Motor' },
+              { value: 'sensor', label: 'Sensor' },
+              { value: 'relay', label: 'Relay' },
+              { value: 'camera', label: 'Camera' },
+              { value: 'port', label: 'Port' },
+              { value: 'other', label: 'Other' },
+            ]}
+            value={channelForm.type}
+            onChange={(e) => setChannelForm({ ...channelForm, type: e.target.value })}
+          />
+          <Input
+            id="ch-description"
+            label="Description (optional)"
+            placeholder="e.g., Controls the garage door"
+            value={channelForm.description}
+            onChange={(e) => setChannelForm({ ...channelForm, description: e.target.value })}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setChannelModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={savingChannel}>
+              {savingChannel ? 'Adding...' : 'Add Channel'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
