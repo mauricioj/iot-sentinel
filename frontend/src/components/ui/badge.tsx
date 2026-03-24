@@ -1,0 +1,25 @@
+import { HTMLAttributes } from 'react';
+import { cn } from '@/utils/cn';
+
+interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  variant?: 'default' | 'success' | 'destructive' | 'warning' | 'secondary';
+}
+
+export function Badge({ className, variant = 'default', ...props }: BadgeProps) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        {
+          'bg-primary/20 text-primary': variant === 'default',
+          'bg-success/20 text-success': variant === 'success',
+          'bg-destructive/20 text-destructive': variant === 'destructive',
+          'bg-warning/20 text-warning': variant === 'warning',
+          'bg-secondary text-secondary-foreground': variant === 'secondary',
+        },
+        className,
+      )}
+      {...props}
+    />
+  );
+}
