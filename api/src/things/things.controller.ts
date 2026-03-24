@@ -43,6 +43,13 @@ export class ThingsController {
     return this.thingsService.update(id, dto);
   }
 
+  @Delete('discovered')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete all discovered (unregistered) things' })
+  deleteDiscovered() {
+    return this.thingsService.deleteByStatus('discovered');
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a thing' })

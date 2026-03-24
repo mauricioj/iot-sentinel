@@ -12,4 +12,5 @@ export const thingsService = {
   update: (id: string, data: Partial<Thing>) =>
     api<Thing>(`/api/v1/things/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) => api(`/api/v1/things/${id}`, { method: 'DELETE' }),
+  deleteDiscovered: () => api<{ deleted: number }>('/api/v1/things/discovered', { method: 'DELETE' }),
 };

@@ -59,6 +59,11 @@ export class ThingsService {
     }
   }
 
+  async deleteByStatus(status: string): Promise<{ deleted: number }> {
+    const deleted = await this.thingsRepository.deleteByStatus(status);
+    return { deleted };
+  }
+
   async findByGroupId(groupId: string, page: number, limit: number): Promise<PaginatedResponseDto<Thing>> {
     const { data, total } = await this.thingsRepository.findByGroupId(groupId, page, limit);
     return PaginatedResponseDto.create(data, total, page, limit);

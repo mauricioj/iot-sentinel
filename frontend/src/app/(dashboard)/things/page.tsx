@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Box, Trash2 } from 'lucide-react';
+import { Plus, Box, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -47,6 +47,8 @@ export default function ThingsPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Thing | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteDiscoveredOpen, setDeleteDiscoveredOpen] = useState(false);
+  const [deletingDiscovered, setDeletingDiscovered] = useState(false);
 
   const [form, setForm] = useState({
     name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '',
@@ -68,7 +70,7 @@ export default function ThingsPage() {
         page: String(pagination.page),
         limit: String(pagination.limit),
       };
-      if (debouncedSearch) params.search = debouncedSearch;
+      if (debouncedSearch) params.q = debouncedSearch;
       if (statusFilter) params.status = statusFilter;
       if (networkFilter) params.networkId = networkFilter;
       if (groupFilter) params.groupId = groupFilter;
@@ -122,6 +124,19 @@ export default function ThingsPage() {
     }
   };
 
+  const handleDeleteDiscovered = async () => {
+    setDeletingDiscovered(true);
+    try {
+      await thingsService.deleteDiscovered();
+      setDeleteDiscoveredOpen(false);
+      await fetchThings();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeletingDiscovered(false);
+    }
+  };
+
   const networkOptions = [
     { value: '', label: 'All networks' },
     ...networks.map((n) => ({ value: n._id, label: n.name })),
@@ -172,10 +187,16 @@ export default function ThingsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Things</h1>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Thing
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="destructive" onClick={() => setDeleteDiscoveredOpen(true)}>
+            <XCircle className="h-4 w-4 mr-2" />
+            Delete Discovered
+          </Button>
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Thing
+          </Button>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -325,6 +346,15 @@ export default function ThingsPage() {
         title="Delete Thing"
         message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
         loading={deleting}
+      />
+
+      <ConfirmDialog
+        open={deleteDiscoveredOpen}
+        onClose={() => setDeleteDiscoveredOpen(false)}
+        onConfirm={handleDeleteDiscovered}
+        title="Delete All Discovered Things"
+        message="This will remove all things with status 'discovered' (found by scan but not registered). This action cannot be undone."
+        loading={deletingDiscovered}
       />
     </div>
   );

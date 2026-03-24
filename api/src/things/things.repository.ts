@@ -77,6 +77,11 @@ export class ThingsRepository {
     return this.thingModel.findByIdAndDelete(id).exec();
   }
 
+  async deleteByStatus(status: string): Promise<number> {
+    const result = await this.thingModel.deleteMany({ status }).exec();
+    return result.deletedCount;
+  }
+
   async countByNetworkId(networkId: string): Promise<number> {
     return this.thingModel.countDocuments({ networkId: new Types.ObjectId(networkId) }).exec();
   }
