@@ -61,5 +61,6 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new Error(error.message || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : undefined;
 }
