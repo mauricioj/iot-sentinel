@@ -232,9 +232,9 @@ Pre-built images are published to Docker Hub under the `mauricioj/` namespace:
 
 | Image | Tag |
 |---|---|
-| `mauricioj/api` | `latest` |
-| `mauricioj/frontend` | `latest` |
-| `mauricioj/worker` | `latest` |
+| `mauricioj/iot-sentinel-api` | `latest` |
+| `mauricioj/iot-sentinel-frontend` | `latest` |
+| `mauricioj/iot-sentinel-worker` | `latest` |
 
 ---
 

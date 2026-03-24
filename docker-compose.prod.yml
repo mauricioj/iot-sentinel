@@ -25,7 +25,7 @@ services:
       - redis_data:/data
 
   frontend:
-    image: mauricioj/frontend:latest
+    image: mauricioj/iot-sentinel-frontend:latest
     container_name: iot-sentinel-frontend
     restart: unless-stopped
     ports:
@@ -36,7 +36,7 @@ services:
       - api
 
   api:
-    image: mauricioj/api:latest
+    image: mauricioj/iot-sentinel-api:latest
     container_name: iot-sentinel-api
     restart: unless-stopped
     ports:
@@ -55,7 +55,7 @@ services:
       - redis
 
   worker:
-    image: mauricioj/worker:latest
+    image: mauricioj/iot-sentinel-worker:latest
     container_name: iot-sentinel-worker
     restart: unless-stopped
     network_mode: host

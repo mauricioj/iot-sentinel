@@ -7,20 +7,21 @@ set -euo pipefail
 
 TAG=${1:-latest}
 REGISTRY=${DOCKER_REGISTRY:-mauricioj}
+PREFIX=iot-sentinel
 
 echo "Pushing IoT Sentinel images (tag: $TAG)..."
 
 echo ""
 echo "==> Pushing API..."
-docker push $REGISTRY/api:$TAG
+docker push $REGISTRY/$PREFIX-api:$TAG
 
 echo ""
 echo "==> Pushing Frontend..."
-docker push $REGISTRY/frontend:$TAG
+docker push $REGISTRY/$PREFIX-frontend:$TAG
 
 echo ""
 echo "==> Pushing Worker..."
-docker push $REGISTRY/worker:$TAG
+docker push $REGISTRY/$PREFIX-worker:$TAG
 
 echo ""
 echo "Done! Images pushed to $REGISTRY"

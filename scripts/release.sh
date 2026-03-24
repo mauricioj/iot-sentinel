@@ -13,6 +13,7 @@ fi
 
 VERSION=$1
 REGISTRY=${DOCKER_REGISTRY:-mauricioj}
+PREFIX=iot-sentinel
 
 echo "Releasing IoT Sentinel v$VERSION..."
 
@@ -20,9 +21,9 @@ echo "Releasing IoT Sentinel v$VERSION..."
 ./scripts/build.sh $VERSION
 
 # Also tag as latest
-docker tag $REGISTRY/api:$VERSION $REGISTRY/api:latest
-docker tag $REGISTRY/frontend:$VERSION $REGISTRY/frontend:latest
-docker tag $REGISTRY/worker:$VERSION $REGISTRY/worker:latest
+docker tag $REGISTRY/$PREFIX-api:$VERSION $REGISTRY/$PREFIX-api:latest
+docker tag $REGISTRY/$PREFIX-frontend:$VERSION $REGISTRY/$PREFIX-frontend:latest
+docker tag $REGISTRY/$PREFIX-worker:$VERSION $REGISTRY/$PREFIX-worker:latest
 
 # Push both tags
 ./scripts/push.sh $VERSION
@@ -32,5 +33,5 @@ echo ""
 echo "Release v$VERSION complete!"
 echo ""
 echo "Users can install with:"
-echo "  curl -O https://raw.githubusercontent.com/YOUR_USER/iot-sentinel/master/docker-compose.prod.yml"
+echo "  curl -O https://raw.githubusercontent.com/mauricioj/iot-sentinel/main/docker-compose.prod.yml"
 echo "  docker compose -f docker-compose.prod.yml up -d"
