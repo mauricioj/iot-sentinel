@@ -11,10 +11,10 @@ export class NotificationRule {
   @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ required: true, enum: TargetType })
+  @Prop({ enum: TargetType })
   targetType: TargetType;
 
-  @Prop({ type: Types.ObjectId, required: true })
+  @Prop({ type: Types.ObjectId })
   targetId: Types.ObjectId;
 
   @Prop({ required: true, enum: RuleCondition })

@@ -26,8 +26,11 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
   scan_failed: 'bg-yellow-500/10 text-yellow-600',
 };
 
-const TARGET_TYPES = ['thing', 'group', 'network', 'local'];
-const CONDITIONS = ['offline_duration', 'status_change', 'new_discovery'];
+const CONDITIONS = [
+  { value: 'status_change', label: 'Status change', targetTypes: ['thing', 'group'], needsThreshold: false },
+  { value: 'offline_duration', label: 'Offline duration', targetTypes: ['thing', 'group'], needsThreshold: true },
+  { value: 'new_discovery', label: 'New device discovered', targetTypes: ['network', 'local'], needsThreshold: false },
+];
 
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<'notifications' | 'rules'>('notifications');
@@ -93,11 +96,22 @@ export default function NotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rulesPagination.page]);
 
+  const selectedCondition = CONDITIONS.find((c) => c.value === ruleForm.condition);
+  const validTargetTypes = selectedCondition?.targetTypes || [];
+  const needsThreshold = selectedCondition?.needsThreshold || false;
+
+  // Reset targetType when condition changes and current type is invalid
+  useEffect(() => {
+    if (validTargetTypes.length > 0 && !validTargetTypes.includes(ruleForm.targetType)) {
+      setRuleForm((prev) => ({ ...prev, targetType: validTargetTypes[0], targetId: '' }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ruleForm.condition]);
+
   // Load target options when targetType changes
   useEffect(() => {
     const loadTargets = async () => {
       setLoadingTargets(true);
-      setRuleForm((prev) => ({ ...prev, targetId: '' }));
       try {
         let options: { value: string; label: string }[] = [];
         switch (ruleForm.targetType) {
@@ -129,7 +143,7 @@ export default function NotificationsPage() {
         setLoadingTargets(false);
       }
     };
-    if (ruleModalOpen) {
+    if (ruleModalOpen && ruleForm.targetType) {
       loadTargets();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -426,47 +440,6 @@ export default function NotificationsPage() {
           />
 
           <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground" htmlFor="targetType">
-              Target Type
-            </label>
-            <select
-              id="targetType"
-              value={ruleForm.targetType}
-              onChange={(e) => setRuleForm({ ...ruleForm, targetType: e.target.value, targetId: '' })}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {TARGET_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground" htmlFor="targetId">
-              Target
-            </label>
-            <select
-              id="targetId"
-              value={ruleForm.targetId}
-              onChange={(e) => setRuleForm({ ...ruleForm, targetId: e.target.value })}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              required
-              disabled={loadingTargets}
-            >
-              <option value="">
-                {loadingTargets ? 'Loading...' : `Select ${ruleForm.targetType}`}
-              </option>
-              {targetOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
             <label className="text-sm font-medium text-foreground" htmlFor="condition">
               Condition
             </label>
@@ -477,23 +450,81 @@ export default function NotificationsPage() {
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {CONDITIONS.map((c) => (
-                <option key={c} value={c}>
-                  {c.replace(/_/g, ' ')}
+                <option key={c.value} value={c.value}>
+                  {c.label}
                 </option>
               ))}
             </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {ruleForm.condition === 'new_discovery'
+                ? 'Notifies when a new device is found on a network scan. Target is optional (leave empty for all networks).'
+                : ruleForm.condition === 'offline_duration'
+                ? 'Notifies when a thing is offline for longer than the threshold.'
+                : 'Notifies when a thing changes status (online/offline).'}
+            </p>
           </div>
 
-          <Input
-            id="threshold"
-            label="Threshold (seconds)"
-            type="number"
-            placeholder="300"
-            value={String(ruleForm.threshold)}
-            onChange={(e) =>
-              setRuleForm({ ...ruleForm, threshold: parseInt(e.target.value, 10) || 0 })
-            }
-          />
+          {validTargetTypes.length > 0 && (
+            <>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-foreground" htmlFor="targetType">
+                  Target Type
+                </label>
+                <select
+                  id="targetType"
+                  value={ruleForm.targetType}
+                  onChange={(e) => setRuleForm({ ...ruleForm, targetType: e.target.value, targetId: '' })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {validTargetTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-foreground" htmlFor="targetId">
+                  Target {ruleForm.condition === 'new_discovery' ? '(optional)' : ''}
+                </label>
+                <select
+                  id="targetId"
+                  value={ruleForm.targetId}
+                  onChange={(e) => setRuleForm({ ...ruleForm, targetId: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  required={ruleForm.condition !== 'new_discovery'}
+                  disabled={loadingTargets}
+                >
+                  <option value="">
+                    {loadingTargets
+                      ? 'Loading...'
+                      : ruleForm.condition === 'new_discovery'
+                      ? 'All (any network)'
+                      : `Select ${ruleForm.targetType}`}
+                  </option>
+                  {targetOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {needsThreshold && (
+            <Input
+              id="threshold"
+              label="Threshold (seconds)"
+              type="number"
+              placeholder="300"
+              value={String(ruleForm.threshold)}
+              onChange={(e) =>
+                setRuleForm({ ...ruleForm, threshold: parseInt(e.target.value, 10) || 0 })
+              }
+            />
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Channels</label>

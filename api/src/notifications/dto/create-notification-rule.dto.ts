@@ -7,13 +7,15 @@ export class CreateNotificationRuleDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ enum: TargetType })
+  @ApiPropertyOptional({ enum: TargetType })
+  @IsOptional()
   @IsEnum(TargetType)
-  targetType: TargetType;
+  targetType?: TargetType;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  targetId: string;
+  targetId?: string;
 
   @ApiProperty({ enum: RuleCondition })
   @IsEnum(RuleCondition)
