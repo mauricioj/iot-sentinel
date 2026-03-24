@@ -9,6 +9,7 @@ import { ScanJob, ScanJobSchema } from './schemas/scan-job.schema';
 import { NetworksModule } from '../networks/networks.module';
 import { ThingsModule } from '../things/things.module';
 import { SettingsModule } from '../settings/settings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SettingsModule } from '../settings/settings.module';
     NetworksModule,
     ThingsModule,
     SettingsModule,
+    NotificationsModule,
   ],
   controllers: [ScannerController],
   providers: [ScannerService, ScannerRepository, ScannerProcessor],

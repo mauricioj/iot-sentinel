@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { ScannerRepository } from './scanner.repository';
 import { ThingsRepository } from '../things/things.repository';
+import { NotificationsService } from '../notifications/notifications.service';
 import { ScanStatus, DiscoveredHost } from './schemas/scan-job.schema';
 import { ThingStatus } from '../things/schemas/thing.schema';
 
@@ -21,6 +22,7 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly scannerRepository: ScannerRepository,
     private readonly thingsRepository: ThingsRepository,
+    private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -123,9 +125,24 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
       results: processedHosts,
     });
 
-    this.logger.log(
-      `Scan job ${mongoJobId} completed: ${processedHosts.filter((h) => h.isNew).length} new, ${processedHosts.filter((h) => !h.isNew).length} updated`,
-    );
+    const newOnes = processedHosts.filter((h) => h.isNew);
+    const updatedOnes = processedHosts.filter((h) => !h.isNew);
+    this.logger.log(`Scan job ${mongoJobId} completed: ${newOnes.length} new, ${updatedOnes.length} updated`);
+
+    // Evaluate notification rules for newly discovered things
+    if (newOnes.length > 0) {
+      try {
+        await this.notificationsService.evaluateDiscoveryRules(
+          networkId,
+          newOnes.map((h) => ({
+            name: h.hostname || h.ipAddress,
+            ipAddress: h.ipAddress,
+          })),
+        );
+      } catch (err) {
+        this.logger.error(`Error evaluating notification rules: ${err}`);
+      }
+    }
   }
 
   /**

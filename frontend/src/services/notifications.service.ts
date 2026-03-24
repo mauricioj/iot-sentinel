@@ -35,6 +35,8 @@ export const notificationsService = {
     api<PaginatedResponse<NotificationRule>>(`/api/v1/notifications/rules?page=${page}&limit=${limit}`),
   createRule: (data: Partial<NotificationRule>) =>
     api<NotificationRule>('/api/v1/notifications/rules', { method: 'POST', body: JSON.stringify(data) }),
+  updateRule: (id: string, data: Partial<NotificationRule>) =>
+    api<NotificationRule>(`/api/v1/notifications/rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteRule: (id: string) =>
     api(`/api/v1/notifications/rules/${id}`, { method: 'DELETE' }),
 };

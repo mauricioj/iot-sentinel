@@ -1,13 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { NotificationsRepository } from './notifications.repository';
 import { CreateNotificationRuleDto } from './dto/create-notification-rule.dto';
 import { UpdateNotificationRuleDto } from './dto/update-notification-rule.dto';
-import { NotificationRule } from './schemas/notification-rule.schema';
+import { NotificationRule, RuleCondition } from './schemas/notification-rule.schema';
 import { Notification, NotificationType } from './schemas/notification.schema';
 import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(private readonly repository: NotificationsRepository) {}
 
   // Rules
@@ -59,5 +61,40 @@ export class NotificationsService {
 
   async countUnread(): Promise<number> {
     return this.repository.countUnread();
+  }
+
+  /**
+   * Evaluate new_discovery rules when things are found by scan.
+   * Called by the scanner processor after processing scan results.
+   */
+  async evaluateDiscoveryRules(
+    networkId: string,
+    newThings: { name: string; ipAddress: string; thingId?: string }[],
+  ): Promise<void> {
+    if (newThings.length === 0) return;
+
+    const enabledRules = await this.repository.findEnabledRules();
+    const discoveryRules = enabledRules.filter(
+      (r) => r.condition === RuleCondition.NEW_DISCOVERY,
+    );
+
+    for (const rule of discoveryRules) {
+      // Rule applies if: no targetId (global), or targetId matches the networkId
+      const ruleTargetId = rule.targetId?.toString();
+      if (ruleTargetId && ruleTargetId !== networkId) {
+        continue;
+      }
+
+      for (const thing of newThings) {
+        const message = `New device discovered: ${thing.name} (${thing.ipAddress})`;
+        await this.emit(
+          NotificationType.NEW_DISCOVERY,
+          message,
+          thing.thingId,
+          rule._id?.toString(),
+        );
+        this.logger.log(`Notification: ${message} (rule: ${rule.name})`);
+      }
+    }
   }
 }

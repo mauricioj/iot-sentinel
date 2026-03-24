@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Plus, Trash2, Check } from 'lucide-react';
+import { Bell, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
@@ -45,6 +45,7 @@ export default function NotificationsPage() {
   const [loadingRules, setLoadingRules] = useState(true);
   const rulesPagination = usePagination();
   const [ruleModalOpen, setRuleModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<NotificationRule | null>(null);
   const [savingRule, setSavingRule] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<NotificationRule | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -169,12 +170,17 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleCreateRule = async (e: React.FormEvent) => {
+  const handleSaveRule = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingRule(true);
     try {
-      await notificationsService.createRule(ruleForm);
+      if (editingRule) {
+        await notificationsService.updateRule(editingRule._id, ruleForm);
+      } else {
+        await notificationsService.createRule(ruleForm);
+      }
       setRuleModalOpen(false);
+      setEditingRule(null);
       setRuleForm({
         name: '',
         targetType: 'thing',
@@ -190,6 +196,34 @@ export default function NotificationsPage() {
     } finally {
       setSavingRule(false);
     }
+  };
+
+  const handleEditRule = (rule: NotificationRule) => {
+    setEditingRule(rule);
+    setRuleForm({
+      name: rule.name,
+      targetType: rule.targetType || 'thing',
+      targetId: rule.targetId || '',
+      condition: rule.condition,
+      threshold: rule.threshold,
+      channels: rule.channels,
+      enabled: rule.enabled,
+    });
+    setRuleModalOpen(true);
+  };
+
+  const handleOpenNewRule = () => {
+    setEditingRule(null);
+    setRuleForm({
+      name: '',
+      targetType: 'thing',
+      targetId: '',
+      condition: 'status_change',
+      threshold: 300,
+      channels: ['in_app'],
+      enabled: true,
+    });
+    setRuleModalOpen(true);
   };
 
   const handleDeleteRule = async () => {
@@ -235,18 +269,24 @@ export default function NotificationsPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-12',
+      className: 'w-20',
       render: (item: NotificationRule) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setDeleteTarget(item);
-          }}
-          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label="Delete rule"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleEditRule(item); }}
+            className="p-1 text-muted-foreground hover:text-primary transition-colors"
+            aria-label="Edit rule"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
+            className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Delete rule"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -376,7 +416,7 @@ export default function NotificationsPage() {
       {activeTab === 'rules' && (
         <div>
           <div className="flex justify-end mb-4">
-            <Button onClick={() => setRuleModalOpen(true)}>
+            <Button onClick={handleOpenNewRule}>
               <Plus className="h-4 w-4 mr-2" />
               New Rule
             </Button>
@@ -388,7 +428,7 @@ export default function NotificationsPage() {
               title="No rules yet"
               description="Create notification rules to get alerted when things go offline or change status."
               action={
-                <Button onClick={() => setRuleModalOpen(true)}>
+                <Button onClick={handleOpenNewRule}>
                   <Plus className="h-4 w-4 mr-2" />
                   New Rule
                 </Button>
@@ -428,8 +468,8 @@ export default function NotificationsPage() {
       )}
 
       {/* Create Rule Modal */}
-      <Modal open={ruleModalOpen} onClose={() => setRuleModalOpen(false)} title="New Notification Rule">
-        <form onSubmit={handleCreateRule} className="space-y-4">
+      <Modal open={ruleModalOpen} onClose={() => { setRuleModalOpen(false); setEditingRule(null); }} title={editingRule ? 'Edit Notification Rule' : 'New Notification Rule'}>
+        <form onSubmit={handleSaveRule} className="space-y-4">
           <Input
             id="rule-name"
             label="Name"
@@ -545,11 +585,11 @@ export default function NotificationsPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setRuleModalOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => { setRuleModalOpen(false); setEditingRule(null); }}>
               Cancel
             </Button>
             <Button type="submit" disabled={savingRule}>
-              {savingRule ? 'Creating...' : 'Create'}
+              {savingRule ? 'Saving...' : editingRule ? 'Save Changes' : 'Create'}
             </Button>
           </div>
         </form>
