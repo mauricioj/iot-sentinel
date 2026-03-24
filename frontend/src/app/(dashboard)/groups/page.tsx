@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
+import { IconPicker, getIconComponent } from '@/components/ui/icon-picker';
 import { groupsService } from '@/services/groups.service';
 import { Group } from '@/types';
 
@@ -94,36 +95,35 @@ export default function GroupsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {groups.map((group) => (
-            <div
-              key={group._id}
-              onClick={() => router.push(`/groups/${group._id}`)}
-              className="relative rounded-lg border border-border bg-card p-5 cursor-pointer hover:bg-accent/30 transition-colors group"
-            >
-              <button
-                onClick={(e) => { e.stopPropagation(); setDeleteTarget(group); }}
-                className="absolute top-3 right-3 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                aria-label="Delete group"
+          {groups.map((group) => {
+            const GroupIcon = getIconComponent(group.icon);
+            return (
+              <div
+                key={group._id}
+                onClick={() => router.push(`/groups/${group._id}`)}
+                className="relative rounded-lg border border-border bg-card p-5 cursor-pointer hover:bg-accent/30 transition-colors group"
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-3 mb-3">
-                <span
-                  className="h-3 w-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: group.color || '#6366f1' }}
-                />
-                <span className="text-base font-semibold truncate">{group.name}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(group); }}
+                  className="absolute top-3 right-3 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                  aria-label="Delete group"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-3 mb-3">
+                  <span
+                    className="h-3 w-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: group.color || '#6366f1' }}
+                  />
+                  <GroupIcon className="h-6 w-6" style={{ color: group.color || '#6366f1' }} />
+                  <span className="text-base font-semibold truncate">{group.name}</span>
+                </div>
+                {group.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                )}
               </div>
-              {group.icon && (
-                <p className="text-xs text-muted-foreground mb-1">
-                  Icon: <span className="font-mono">{group.icon}</span>
-                </p>
-              )}
-              {group.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -137,12 +137,9 @@ export default function GroupsPage() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
-          <Input
-            id="group-icon"
-            label="Icon name"
-            placeholder="camera (lucide icon name)"
+          <IconPicker
             value={form.icon}
-            onChange={(e) => setForm({ ...form, icon: e.target.value })}
+            onChange={(icon) => setForm({ ...form, icon })}
           />
           <div className="space-y-1">
             <label htmlFor="group-color" className="text-sm font-medium text-foreground">Color</label>

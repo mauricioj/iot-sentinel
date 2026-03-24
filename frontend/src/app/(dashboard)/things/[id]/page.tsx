@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -11,9 +11,11 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CredentialsReveal } from '@/components/things/credentials-reveal';
+import { getIconComponent } from '@/components/ui/icon-picker';
 import { thingsService } from '@/services/things.service';
 import { networksService } from '@/services/networks.service';
-import { Thing, Network } from '@/types';
+import { groupsService } from '@/services/groups.service';
+import { Thing, Network, Group } from '@/types';
 
 const THING_TYPES = [
   'router', 'switch', 'access_point', 'server', 'workstation', 'printer',
@@ -28,6 +30,8 @@ export default function ThingDetailPage() {
   const [thing, setThing] = useState<Thing | null>(null);
   const [loading, setLoading] = useState(true);
   const [networks, setNetworks] = useState<Network[]>([]);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
+  const [addGroupOpen, setAddGroupOpen] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,6 +72,7 @@ export default function ThingDetailPage() {
   useEffect(() => {
     fetchThing();
     networksService.findAll(1, 100).then((r) => setNetworks(r.data)).catch(console.error);
+    groupsService.findAll(1, 100).then((r) => setAllGroups(r.data)).catch(console.error);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -123,6 +128,30 @@ export default function ThingDetailPage() {
     }
   };
 
+  const handleAddToGroup = async (groupId: string) => {
+    if (!thing) return;
+    const current = thing.groupIds || [];
+    if (current.includes(groupId)) return;
+    try {
+      await thingsService.update(id, { groupIds: [...current, groupId] } as any);
+      setAddGroupOpen(false);
+      await fetchThing();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRemoveFromGroup = async (groupId: string) => {
+    if (!thing) return;
+    const updated = (thing.groupIds || []).filter((gid) => gid !== groupId);
+    try {
+      await thingsService.update(id, { groupIds: updated } as any);
+      await fetchThing();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const typeOptions = THING_TYPES.map((t) => ({ value: t, label: t.replace('_', ' ') }));
   const networkOptions = networks.map((n) => ({ value: n._id, label: n.name }));
 
@@ -139,6 +168,8 @@ export default function ThingDetailPage() {
   }
 
   const credentials = thing.credentials || { username: '', password: '', notes: '' };
+  const assignedGroups = allGroups.filter((g) => (thing.groupIds || []).includes(g._id));
+  const availableGroups = allGroups.filter((g) => !(thing.groupIds || []).includes(g._id));
 
   return (
     <div className="space-y-6">
@@ -194,6 +225,73 @@ export default function ThingDetailPage() {
               {thing.lastSeenAt ? new Date(thing.lastSeenAt).toLocaleString() : '-'}
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Groups Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Groups</CardTitle>
+            {availableGroups.length > 0 && (
+              <div className="relative">
+                <Button size="sm" variant="secondary" onClick={() => setAddGroupOpen(!addGroupOpen)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add to Group
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+                {addGroupOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-10 min-w-48 rounded-lg border border-border bg-card shadow-lg">
+                    {availableGroups.map((g) => {
+                      const GIcon = getIconComponent(g.icon);
+                      return (
+                        <button
+                          key={g._id}
+                          type="button"
+                          onClick={() => handleAddToGroup(g._id)}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
+                        >
+                          <GIcon className="h-4 w-4" style={{ color: g.color || '#6366f1' }} />
+                          {g.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {assignedGroups.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Not assigned to any group yet.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {assignedGroups.map((group) => {
+                const GIcon = getIconComponent(group.icon);
+                return (
+                  <span
+                    key={group._id}
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm border"
+                    style={{ borderColor: group.color || '#6366f1' }}
+                  >
+                    <GIcon className="h-4 w-4" style={{ color: group.color || '#6366f1' }} />
+                    <span>{group.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFromGroup(group._id)}
+                      className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                      title={`Remove from ${group.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

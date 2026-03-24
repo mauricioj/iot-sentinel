@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { IconPicker, getIconComponent } from '@/components/ui/icon-picker';
 import { groupsService } from '@/services/groups.service';
 import { Group, Thing } from '@/types';
 
@@ -111,6 +112,8 @@ export default function GroupDetailPage() {
     return <div className="text-center py-12 text-muted-foreground">Group not found.</div>;
   }
 
+  const GroupIcon = getIconComponent(group.icon);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -118,6 +121,7 @@ export default function GroupDetailPage() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back
         </Button>
+        <GroupIcon className="h-6 w-6" style={{ color: group.color || '#6366f1' }} />
         <h1 className="text-2xl font-bold flex-1">{group.name}</h1>
         <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="h-4 w-4 mr-1" />
@@ -141,7 +145,10 @@ export default function GroupDetailPage() {
           </div>
           <div>
             <p className="text-muted-foreground">Icon</p>
-            <p className="font-medium mt-1 font-mono">{group.icon || '-'}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <GroupIcon className="h-5 w-5" style={{ color: group.color || '#6366f1' }} />
+              <span className="font-mono">{group.icon || '-'}</span>
+            </div>
           </div>
           <div>
             <p className="text-muted-foreground">Color</p>
@@ -189,12 +196,9 @@ export default function GroupDetailPage() {
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
             required
           />
-          <Input
-            id="edit-group-icon"
-            label="Icon name"
-            placeholder="camera"
+          <IconPicker
             value={editForm.icon}
-            onChange={(e) => setEditForm({ ...editForm, icon: e.target.value })}
+            onChange={(icon) => setEditForm({ ...editForm, icon })}
           />
           <div className="space-y-1">
             <label htmlFor="edit-group-color" className="text-sm font-medium text-foreground">Color</label>
