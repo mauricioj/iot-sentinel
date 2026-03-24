@@ -13,7 +13,13 @@ export class NotificationsRepository {
 
   // Rules
   async createRule(data: Partial<NotificationRule>): Promise<NotificationRuleDocument> {
-    return this.ruleModel.create({ ...data, targetId: new Types.ObjectId(data.targetId as any) });
+    const ruleData = { ...data };
+    if (ruleData.targetId) {
+      ruleData.targetId = new Types.ObjectId(ruleData.targetId as any) as any;
+    } else {
+      delete ruleData.targetId;
+    }
+    return this.ruleModel.create(ruleData);
   }
 
   async findAllRules(page: number, limit: number): Promise<{ data: NotificationRuleDocument[]; total: number }> {
