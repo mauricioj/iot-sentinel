@@ -1,105 +1,163 @@
-import { Processor, Process, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import { ScannerRepository } from './scanner.repository';
 import { ThingsRepository } from '../things/things.repository';
 import { ScanStatus, DiscoveredHost } from './schemas/scan-job.schema';
 import { ThingStatus } from '../things/schemas/thing.schema';
 
-@Processor('scanner')
-export class ScannerProcessor {
+/**
+ * Listens for scan job completion events published by the Python worker
+ * via Redis pub/sub, then processes results (MAC matching, Thing CRUD).
+ *
+ * The Python worker is the ONLY consumer of the Bull queue.
+ * NestJS does NOT consume jobs — it only reacts to completion events.
+ */
+@Injectable()
+export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ScannerProcessor.name);
+  private subscriber: Redis;
 
   constructor(
     private readonly scannerRepository: ScannerRepository,
     private readonly thingsRepository: ThingsRepository,
+    private readonly configService: ConfigService,
   ) {}
 
-  @Process('discovery')
-  async handleDiscovery(job: Job) {
-    this.logger.log(`Processing discovery job ${job.data.jobId} for ${job.data.cidr}`);
-    await this.scannerRepository.updateStatus(job.data.jobId, ScanStatus.RUNNING, {
-      startedAt: new Date(),
+  async onModuleInit() {
+    const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+    this.subscriber = new Redis(redisUrl);
+
+    this.subscriber.subscribe('bull:scanner:completed', (err) => {
+      if (err) {
+        this.logger.error(`Failed to subscribe to completion channel: ${err.message}`);
+      } else {
+        this.logger.log('Subscribed to bull:scanner:completed channel');
+      }
     });
-    // The actual scan is done by the Python worker.
-    // This process handler is a placeholder — the real work happens in @OnQueueCompleted.
-    // In production, the Python worker consumes directly from Redis.
-    // For the NestJS side, we only listen for completion events.
-    return job.data;
+
+    this.subscriber.on('message', async (channel, message) => {
+      if (channel === 'bull:scanner:completed') {
+        try {
+          const data = JSON.parse(message);
+          await this.handleCompletion(data);
+        } catch (err) {
+          this.logger.error(`Error processing completion event: ${err}`);
+        }
+      }
+    });
   }
 
-  @Process('status_check')
-  async handleStatusCheck(job: Job) {
-    this.logger.log(`Processing status_check job ${job.data.jobId}`);
-    await this.scannerRepository.updateStatus(job.data.jobId, ScanStatus.RUNNING, {
-      startedAt: new Date(),
-    });
-    return job.data;
+  async onModuleDestroy() {
+    if (this.subscriber) {
+      await this.subscriber.unsubscribe('bull:scanner:completed');
+      await this.subscriber.quit();
+    }
   }
 
-  @Process('deep_scan')
-  async handleDeepScan(job: Job) {
-    this.logger.log(`Processing deep_scan job ${job.data.jobId}`);
-    await this.scannerRepository.updateStatus(job.data.jobId, ScanStatus.RUNNING, {
+  private async handleCompletion(data: { jobId: string; returnvalue: { hosts: any[] } }) {
+    const { jobId, returnvalue } = data;
+    if (!returnvalue?.hosts) {
+      this.logger.warn(`Job ${jobId} completed but no hosts in result`);
+      return;
+    }
+
+    const hosts = returnvalue.hosts;
+    this.logger.log(`Processing scan results: ${hosts.length} hosts from job ${jobId}`);
+
+    // Find the scan job to get networkId
+    // The jobId from Python is the Bull Redis ID, but we need our MongoDB job
+    // The Python worker receives jobId from the job data (which is our MongoDB _id)
+    const jobData = await this.findJobByRedisOrMongoId(jobId);
+    if (!jobData) {
+      this.logger.warn(`Could not find scan job for ID ${jobId}`);
+      return;
+    }
+
+    const { mongoJobId, networkId } = jobData;
+
+    // Mark as running if still queued
+    await this.scannerRepository.updateStatus(mongoJobId, ScanStatus.RUNNING, {
       startedAt: new Date(),
     });
-    return job.data;
-  }
-
-  @OnQueueCompleted()
-  async onCompleted(job: Job, result: any) {
-    if (!result?.hosts) return;
-
-    const { jobId, networkId } = job.data;
-    const hosts: DiscoveredHost[] = result.hosts;
-    this.logger.log(`Scan job ${jobId} completed with ${hosts.length} hosts found`);
 
     // Process each discovered host
     const processedHosts: DiscoveredHost[] = [];
     for (const host of hosts) {
-      const existing = host.macAddress
-        ? await this.thingsRepository.findByMacAddress(host.macAddress)
-        : null;
+      try {
+        const existing = host.macAddress
+          ? await this.thingsRepository.findByMacAddress(host.macAddress)
+          : null;
 
-      if (existing) {
-        // Update existing thing
-        await this.thingsRepository.update(existing._id.toString(), {
-          ipAddress: host.ipAddress,
-          hostname: host.hostname || existing.hostname,
-          status: ThingStatus.ONLINE,
-          lastSeenAt: new Date(),
-          ports: host.ports as any,
-        } as any);
-        processedHosts.push({ ...host, isNew: false });
-      } else {
-        // Create discovered thing
-        await this.thingsRepository.create({
-          networkId,
-          name: host.hostname || host.ipAddress,
-          type: 'other' as any,
-          macAddress: host.macAddress || undefined,
-          ipAddress: host.ipAddress,
-          hostname: host.hostname,
-          ports: host.ports as any,
-        } as any);
-        processedHosts.push({ ...host, isNew: true });
+        if (existing) {
+          await this.thingsRepository.update(existing._id.toString(), {
+            ipAddress: host.ipAddress,
+            hostname: host.hostname || existing.hostname,
+            status: ThingStatus.ONLINE,
+            lastSeenAt: new Date(),
+            ports: host.ports || [],
+          } as any);
+          processedHosts.push({ ...host, isNew: false });
+        } else if (host.macAddress || host.ipAddress) {
+          await this.thingsRepository.create({
+            networkId,
+            name: host.hostname || host.ipAddress,
+            type: 'other' as any,
+            macAddress: host.macAddress || undefined,
+            ipAddress: host.ipAddress,
+            hostname: host.hostname || '',
+            ports: host.ports || [],
+          } as any);
+          processedHosts.push({ ...host, isNew: true });
+        }
+      } catch (err) {
+        this.logger.error(`Error processing host ${host.ipAddress}: ${err}`);
       }
     }
 
     // Update scan job with results
-    await this.scannerRepository.updateStatus(jobId, ScanStatus.COMPLETED, {
+    await this.scannerRepository.updateStatus(mongoJobId, ScanStatus.COMPLETED, {
       completedAt: new Date(),
       results: processedHosts,
     });
+
+    this.logger.log(
+      `Scan job ${mongoJobId} completed: ${processedHosts.filter((h) => h.isNew).length} new, ${processedHosts.filter((h) => !h.isNew).length} updated`,
+    );
   }
 
-  @OnQueueFailed()
-  async onFailed(job: Job, error: Error) {
-    const { jobId } = job.data;
-    this.logger.error(`Scan job ${jobId} failed: ${error.message}`);
-    await this.scannerRepository.updateStatus(jobId, ScanStatus.FAILED, {
-      completedAt: new Date(),
-      error: error.message,
-    });
+  /**
+   * The Python worker receives the MongoDB job ID in job.data.jobId.
+   * The Redis pub/sub message contains the Bull Redis ID (a number).
+   * We need to find the MongoDB scan job either way.
+   */
+  private async findJobByRedisOrMongoId(id: string): Promise<{ mongoJobId: string; networkId: string } | null> {
+    // Try as MongoDB ID first
+    const directJob = await this.scannerRepository.findById(id);
+    if (directJob) {
+      return { mongoJobId: directJob._id.toString(), networkId: directJob.networkId.toString() };
+    }
+
+    // If it's a Bull Redis ID (number), read job data from Redis to get the MongoDB ID
+    try {
+      const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+      const reader = new Redis(redisUrl);
+      const jobData = await reader.hget(`bull:scanner:${id}`, 'data');
+      await reader.quit();
+
+      if (jobData) {
+        const parsed = JSON.parse(jobData);
+        if (parsed.jobId) {
+          const mongoJob = await this.scannerRepository.findById(parsed.jobId);
+          if (mongoJob) {
+            return { mongoJobId: mongoJob._id.toString(), networkId: mongoJob.networkId.toString() };
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
   }
 }
