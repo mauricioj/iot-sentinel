@@ -12,6 +12,7 @@ import { LocalsModule } from './locals/locals.module';
 import { NetworksModule } from './networks/networks.module';
 import { GroupsModule } from './groups/groups.module';
 import { ThingsModule } from './things/things.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ThingsModule } from './things/things.module';
     NetworksModule,
     GroupsModule,
     ThingsModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
