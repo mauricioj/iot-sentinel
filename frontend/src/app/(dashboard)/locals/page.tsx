@@ -46,10 +46,10 @@ export default function LocalsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await localsService.create(form);
+      const created = await localsService.create(form);
       setModalOpen(false);
       setForm({ name: '', description: '', address: '' });
-      await fetchLocals();
+      router.push(`/locals/${created._id}`);
     } catch (err) {
       console.error(err);
     } finally {
