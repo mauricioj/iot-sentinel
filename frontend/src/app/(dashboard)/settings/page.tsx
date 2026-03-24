@@ -71,14 +71,14 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const data = await api<Record<string, unknown>>('/api/v1/settings');
+      const data = await api<Record<string, any>>('/api/v1/settings');
       setSettings({
-        instanceName: (data.instanceName as string) || '',
-        language: (data.language as string) || 'en-US',
-        timezone: (data.timezone as string) || 'UTC',
-        maxConcurrentScans: (data.maxConcurrentScans as number) ?? 3,
-        cooldownSeconds: (data.cooldownSeconds as number) ?? 60,
-        statusCheckInterval: (data.statusCheckInterval as number) ?? 30,
+        instanceName: data.instanceName || '',
+        language: data.language || 'en-US',
+        timezone: data.timezone || 'UTC',
+        maxConcurrentScans: data.scanner?.maxConcurrentScans ?? 1,
+        cooldownSeconds: data.scanner?.cooldownSeconds ?? 60,
+        statusCheckInterval: data.monitor?.statusCheckInterval ?? 300,
       });
     } catch (err) {
       console.error(err);
@@ -89,8 +89,8 @@ export default function SettingsPage() {
 
   const fetchUsers = async () => {
     try {
-      const data = await api<User[]>('/api/v1/users');
-      setUsers(data);
+      const res = await api<{ data: User[]; meta: Record<string, number> }>('/api/v1/users');
+      setUsers(res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -109,7 +109,18 @@ export default function SettingsPage() {
     try {
       await api('/api/v1/settings', {
         method: 'PATCH',
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          instanceName: settings.instanceName,
+          language: settings.language,
+          timezone: settings.timezone,
+          scanner: {
+            maxConcurrentScans: settings.maxConcurrentScans,
+            cooldownSeconds: settings.cooldownSeconds,
+          },
+          monitor: {
+            statusCheckInterval: settings.statusCheckInterval,
+          },
+        }),
       });
       setSaveMessage({ type: 'success', text: 'Settings saved successfully.' });
     } catch (err) {
