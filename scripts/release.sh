@@ -12,7 +12,7 @@ if [ -z "${1:-}" ]; then
 fi
 
 VERSION=$1
-REGISTRY=${DOCKER_REGISTRY:-iotsentinel}
+REGISTRY=${DOCKER_REGISTRY:-mauricioj}
 
 echo "Releasing IoT Sentinel v$VERSION..."
 

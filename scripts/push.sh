@@ -6,7 +6,7 @@ set -euo pipefail
 # Requires: docker login
 
 TAG=${1:-latest}
-REGISTRY=${DOCKER_REGISTRY:-iotsentinel}
+REGISTRY=${DOCKER_REGISTRY:-mauricioj}
 
 echo "Pushing IoT Sentinel images (tag: $TAG)..."
 

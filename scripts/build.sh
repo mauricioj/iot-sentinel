@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage: ./scripts/build.sh [tag]
 
 TAG=${1:-latest}
-REGISTRY=${DOCKER_REGISTRY:-iotsentinel}
+REGISTRY=${DOCKER_REGISTRY:-mauricioj}
 
 echo "Building IoT Sentinel images (tag: $TAG)..."
 
