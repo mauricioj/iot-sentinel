@@ -16,6 +16,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ScannerModule } from './scanner/scanner.module';
 import { MonitorModule } from './monitor/monitor.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ScannerModule,
     MonitorModule,
     NotificationsModule,
+    BackupModule,
   ],
 })
 export class AppModule {}
