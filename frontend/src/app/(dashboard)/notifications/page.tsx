@@ -13,6 +13,10 @@ import {
   NotificationItem,
   NotificationRule,
 } from '@/services/notifications.service';
+import { localsService } from '@/services/locals.service';
+import { networksService } from '@/services/networks.service';
+import { thingsService } from '@/services/things.service';
+import { groupsService } from '@/services/groups.service';
 import { usePagination } from '@/hooks/use-pagination';
 
 const TYPE_BADGE_COLORS: Record<string, string> = {
@@ -50,6 +54,8 @@ export default function NotificationsPage() {
     channels: ['in_app'],
     enabled: true,
   });
+  const [targetOptions, setTargetOptions] = useState<{ value: string; label: string }[]>([]);
+  const [loadingTargets, setLoadingTargets] = useState(false);
 
   const fetchNotifications = async () => {
     setLoadingNotifs(true);
@@ -86,6 +92,48 @@ export default function NotificationsPage() {
     fetchRules();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rulesPagination.page]);
+
+  // Load target options when targetType changes
+  useEffect(() => {
+    const loadTargets = async () => {
+      setLoadingTargets(true);
+      setRuleForm((prev) => ({ ...prev, targetId: '' }));
+      try {
+        let options: { value: string; label: string }[] = [];
+        switch (ruleForm.targetType) {
+          case 'thing': {
+            const res = await thingsService.findAll({ page: '1', limit: '100' });
+            options = res.data.map((t) => ({ value: t._id, label: `${t.name} (${t.ipAddress || t.macAddress || 'no IP'})` }));
+            break;
+          }
+          case 'group': {
+            const res = await groupsService.findAll(1, 100);
+            options = res.data.map((g) => ({ value: g._id, label: g.name }));
+            break;
+          }
+          case 'network': {
+            const res = await networksService.findAll(1, 100);
+            options = res.data.map((n) => ({ value: n._id, label: `${n.name} (${n.cidr})` }));
+            break;
+          }
+          case 'local': {
+            const res = await localsService.findAll(1, 100);
+            options = res.data.map((l) => ({ value: l._id, label: l.name }));
+            break;
+          }
+        }
+        setTargetOptions(options);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingTargets(false);
+      }
+    };
+    if (ruleModalOpen) {
+      loadTargets();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ruleForm.targetType, ruleModalOpen]);
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -384,7 +432,7 @@ export default function NotificationsPage() {
             <select
               id="targetType"
               value={ruleForm.targetType}
-              onChange={(e) => setRuleForm({ ...ruleForm, targetType: e.target.value })}
+              onChange={(e) => setRuleForm({ ...ruleForm, targetType: e.target.value, targetId: '' })}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {TARGET_TYPES.map((t) => (
@@ -395,14 +443,28 @@ export default function NotificationsPage() {
             </select>
           </div>
 
-          <Input
-            id="targetId"
-            label="Target ID"
-            placeholder="MongoDB ObjectId of the target"
-            value={ruleForm.targetId}
-            onChange={(e) => setRuleForm({ ...ruleForm, targetId: e.target.value })}
-            required
-          />
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground" htmlFor="targetId">
+              Target
+            </label>
+            <select
+              id="targetId"
+              value={ruleForm.targetId}
+              onChange={(e) => setRuleForm({ ...ruleForm, targetId: e.target.value })}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              required
+              disabled={loadingTargets}
+            >
+              <option value="">
+                {loadingTargets ? 'Loading...' : `Select ${ruleForm.targetType}`}
+              </option>
+              {targetOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground" htmlFor="condition">
