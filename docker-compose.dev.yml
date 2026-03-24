@@ -7,3 +7,12 @@ services:
       - ./api/src:/app/src
       - api_secrets:/data/secrets
     command: npm run start:dev
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./worker/src:/app/src
+    environment:
+      SCANNER_MOCK_MODE: "true"

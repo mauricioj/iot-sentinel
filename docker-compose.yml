@@ -41,6 +41,21 @@ services:
       - mongodb
       - redis
 
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: iot-sentinel-worker
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    environment:
+      REDIS_URL: ${REDIS_URL}
+      SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-false}
+    depends_on:
+      - redis
+
 volumes:
   mongodb_data:
   redis_data:
