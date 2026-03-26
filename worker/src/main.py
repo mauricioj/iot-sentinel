@@ -5,8 +5,10 @@ Consumes scan jobs from Redis/Bull queue and executes nmap scans.
 import json
 import time
 import logging
+import threading
 import redis
 from src.config import REDIS_URL, MOCK_MODE, QUEUE_NAME
+from src.health_checker import run_health_check_loop
 
 if MOCK_MODE:
     from src.mock_scanner import scan_network
@@ -102,6 +104,11 @@ def main():
     r = get_redis_connection()
     r.ping()
     logger.info("Connected to Redis")
+
+    # Start health checker in background thread
+    health_thread = threading.Thread(target=run_health_check_loop, args=(r,), daemon=True)
+    health_thread.start()
+    logger.info("Health checker thread started")
 
     consume_jobs(r)
 

@@ -21,10 +21,11 @@ import { Thing, Network, Group } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
+  { value: 'discovered', label: 'Discovered' },
+  { value: 'registered', label: 'Registered' },
   { value: 'online', label: 'Online' },
   { value: 'offline', label: 'Offline' },
   { value: 'unknown', label: 'Unknown' },
-  { value: 'discovered', label: 'Discovered' },
 ];
 
 export default function ThingsPage() {
@@ -68,7 +69,11 @@ export default function ThingsPage() {
         limit: String(pagination.limit),
       };
       if (debouncedSearch) params.q = debouncedSearch;
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter === 'discovered' || statusFilter === 'registered') {
+        params.registrationStatus = statusFilter;
+      } else if (statusFilter) {
+        params.healthStatus = statusFilter;
+      }
       if (networkFilter) params.networkId = networkFilter;
       if (groupFilter) params.groupId = groupFilter;
 
@@ -182,7 +187,7 @@ export default function ThingsPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (item: Thing) => <StatusBadge status={item.status} />,
+      render: (item: Thing) => <StatusBadge registrationStatus={item.registrationStatus} healthStatus={item.healthStatus} />,
     },
     {
       key: 'actions',

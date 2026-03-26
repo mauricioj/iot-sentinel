@@ -6,7 +6,7 @@ services:
     volumes:
       - ./frontend/src:/app/src
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-9001}
+      API_INTERNAL_URL: http://localhost:${API_PORT:-9001}
 
   api:
     build:

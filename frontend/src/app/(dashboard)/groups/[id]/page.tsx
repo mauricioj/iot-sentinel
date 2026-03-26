@@ -96,7 +96,7 @@ export default function GroupDetailPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (t: Thing) => <StatusBadge status={t.status} />,
+      render: (t: Thing) => <StatusBadge registrationStatus={t.registrationStatus} healthStatus={t.healthStatus} />,
     },
   ];
 

@@ -1,5 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9001';
-
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
@@ -10,19 +8,27 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
+function forceLogout() {
+  accessToken = null;
+  localStorage.removeItem('refreshToken');
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('refreshToken');
   if (!refreshToken) return null;
 
   try {
-    const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+    const res = await fetch('/api/v1/auth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
 
     if (!res.ok) {
-      localStorage.removeItem('refreshToken');
+      forceLogout();
       return null;
     }
 
@@ -31,6 +37,7 @@ async function refreshAccessToken(): Promise<string | null> {
     localStorage.setItem('refreshToken', data.refreshToken);
     return data.accessToken;
   } catch {
+    forceLogout();
     return null;
   }
 }
@@ -45,14 +52,19 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  let res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  let res = await fetch(path, { ...options, headers });
 
   // If 401, try refreshing token
   if (res.status === 401 && accessToken) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_URL}${path}`, { ...options, headers });
+      res = await fetch(path, { ...options, headers });
+    }
+    // If still 401 after refresh, force logout
+    if (res.status === 401) {
+      forceLogout();
+      throw new Error('Session expired');
     }
   }
 

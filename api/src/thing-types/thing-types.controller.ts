@@ -9,9 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
 
 @ApiTags('Thing Types')
-@ApiBearerAuth()
 @Controller('api/v1/thing-types')
-@UseGuards(JwtAuthGuard)
 export class ThingTypesController {
   constructor(private readonly service: ThingTypesService) {}
 
@@ -28,24 +26,27 @@ export class ThingTypesController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a thing type' })
   create(@Body() dto: CreateThingTypeDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a thing type' })
   update(@Param('id') id: string, @Body() dto: UpdateThingTypeDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a thing type' })
   delete(@Param('id') id: string) {
     return this.service.delete(id);

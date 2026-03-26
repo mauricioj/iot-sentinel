@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:9079')
 QUEUE_NAME = 'bull:scanner'
+HEALTH_CHECK_INTERVAL = int(os.getenv('HEALTH_CHECK_INTERVAL', '300'))
+API_INTERNAL_URL = os.getenv('API_INTERNAL_URL', 'http://localhost:9001')
 
 def _detect_mock_mode() -> bool:
     """Auto-detect if real scanning is possible.

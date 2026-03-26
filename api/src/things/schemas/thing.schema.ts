@@ -3,11 +3,15 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type ThingDocument = HydratedDocument<Thing>;
 
-export enum ThingStatus {
+export enum RegistrationStatus {
+  DISCOVERED = 'discovered',
+  REGISTERED = 'registered',
+}
+
+export enum HealthStatus {
   ONLINE = 'online',
   OFFLINE = 'offline',
   UNKNOWN = 'unknown',
-  DISCOVERED = 'discovered',
 }
 
 export enum ChannelDirection {
@@ -106,8 +110,11 @@ export class Thing {
   @Prop({ default: '' })
   description: string;
 
-  @Prop({ enum: ThingStatus, default: ThingStatus.UNKNOWN, index: true })
-  status: ThingStatus;
+  @Prop({ enum: RegistrationStatus, default: RegistrationStatus.DISCOVERED, index: true })
+  registrationStatus: RegistrationStatus;
+
+  @Prop({ enum: HealthStatus, default: HealthStatus.UNKNOWN, index: true })
+  healthStatus: HealthStatus;
 
   @Prop({ type: Date })
   lastSeenAt: Date;

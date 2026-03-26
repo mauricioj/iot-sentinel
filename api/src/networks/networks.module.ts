@@ -13,6 +13,6 @@ import { LocalsModule } from '../locals/locals.module';
   ],
   controllers: [NetworksController],
   providers: [NetworksService, NetworksRepository],
-  exports: [NetworksService],
+  exports: [NetworksService, NetworksRepository],
 })
 export class NetworksModule {}

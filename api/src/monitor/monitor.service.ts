@@ -5,6 +5,7 @@ import { ThingsRepository } from '../things/things.repository';
 import { NetworksRepository } from '../networks/networks.repository';
 import { HealthStatus } from '../things/schemas/thing.schema';
 import { StatusHistoryService } from '../status-history/status-history.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class MonitorService implements OnModuleInit, OnModuleDestroy {
@@ -16,6 +17,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     private readonly networksRepository: NetworksRepository,
     private readonly configService: ConfigService,
     private readonly statusHistoryService: StatusHistoryService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async onModuleInit() {
@@ -74,20 +76,29 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async getNetworksToCheck(): Promise<{ networkId: string; cidr: string }[]> {
+  async getNetworksToCheck() {
     const ThingModel = this.thingsRepository.getModel();
     const networks = await ThingModel.aggregate([
-      { $match: { registrationStatus: 'registered' } },
+      { $match: { registrationStatus: 'registered', networkId: { $ne: null } } },
       { $group: { _id: '$networkId' } },
     ]).exec();
 
-    const result: { networkId: string; cidr: string }[] = [];
+    const items: { networkId: string; cidr: string }[] = [];
     for (const n of networks) {
       if (!n._id) continue;
-      const network = await this.networksRepository.findById(n._id.toString());
-      if (network) result.push({ networkId: n._id.toString(), cidr: network.cidr });
+      try {
+        const network = await this.networksRepository.findById(n._id.toString());
+        if (network) items.push({ networkId: n._id.toString(), cidr: network.cidr });
+      } catch (err) {
+        this.logger.warn(`Skipping invalid networkId ${n._id}: ${err}`);
+      }
     }
-    return result;
+
+    // Include interval from settings so worker can adjust dynamically
+    const settings = await this.settingsService.get();
+    const interval = (settings as any)?.monitor?.statusCheckInterval || 300;
+
+    return { networks: items, interval };
   }
 
   private async processHealthCheck(hosts: any[]) {

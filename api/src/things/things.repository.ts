@@ -28,8 +28,11 @@ export class ThingsRepository {
     if (query.groupId) {
       filter.groupIds = new Types.ObjectId(query.groupId);
     }
-    if (query.status) {
-      filter.status = query.status;
+    if (query.registrationStatus) {
+      filter.registrationStatus = query.registrationStatus;
+    }
+    if (query.healthStatus) {
+      filter.healthStatus = query.healthStatus;
     }
     if (query.q) {
       const regex = new RegExp(query.q, 'i');
@@ -38,6 +41,7 @@ export class ThingsRepository {
         { macAddress: regex },
         { ipAddress: regex },
         { hostname: regex },
+        { vendor: regex },
         { 'channels.name': regex },
       ];
     }
@@ -77,8 +81,8 @@ export class ThingsRepository {
     return this.thingModel.findByIdAndDelete(id).exec();
   }
 
-  async deleteByStatus(status: string): Promise<number> {
-    const result = await this.thingModel.deleteMany({ status }).exec();
+  async deleteByRegistrationStatus(registrationStatus: string): Promise<number> {
+    const result = await this.thingModel.deleteMany({ registrationStatus }).exec();
     return result.deletedCount;
   }
 
@@ -90,15 +94,26 @@ export class ThingsRepository {
     return this.thingModel.countDocuments({ groupIds: new Types.ObjectId(groupId) }).exec();
   }
 
-  async countByStatus(): Promise<Record<string, number>> {
+  async countByRegistrationStatus(): Promise<Record<string, number>> {
     const results = await this.thingModel.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $group: { _id: '$registrationStatus', count: { $sum: 1 } } },
     ]).exec();
     const counts: Record<string, number> = {};
-    for (const r of results) {
-      counts[r._id] = r.count;
-    }
+    for (const r of results) counts[r._id] = r.count;
     return counts;
+  }
+
+  async countByHealthStatus(): Promise<Record<string, number>> {
+    const results = await this.thingModel.aggregate([
+      { $group: { _id: '$healthStatus', count: { $sum: 1 } } },
+    ]).exec();
+    const counts: Record<string, number> = {};
+    for (const r of results) counts[r._id] = r.count;
+    return counts;
+  }
+
+  getModel(): Model<ThingDocument> {
+    return this.thingModel;
   }
 
   async countTotal(): Promise<number> {

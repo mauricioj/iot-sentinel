@@ -4,8 +4,6 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken } from '@/services/api';
 
-const WS_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9001') + '/ws';
-
 export function useWebSocket() {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -14,19 +12,39 @@ export function useWebSocket() {
     const token = getAccessToken();
     if (!token) return;
 
-    const socket = io(WS_URL, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 30000,
-    });
+    let socket: Socket;
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    (async () => {
+      let wsUrl = '';
+      try {
+        const res = await fetch('/runtime-config');
+        const config = await res.json();
+        if (config.wsUrl) {
+          // Explicit API_PUBLIC_URL configured
+          wsUrl = config.wsUrl;
+        } else if (config.apiPort && typeof window !== 'undefined') {
+          // Auto-derive: same hostname as browser, API port
+          const { protocol, hostname } = window.location;
+          wsUrl = `${protocol}//${hostname}:${config.apiPort}`;
+        }
+      } catch {
+        // Fallback: connect to same origin
+      }
 
-    socketRef.current = socket;
+      socket = io(wsUrl + '/ws', {
+        auth: { token },
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 30000,
+      });
 
-    return () => { socket.disconnect(); };
+      socket.on('connect', () => setConnected(true));
+      socket.on('disconnect', () => setConnected(false));
+
+      socketRef.current = socket;
+    })();
+
+    return () => { socket?.disconnect(); };
   }, []);
 
   const on = useCallback((event: string, handler: (...args: any[]) => void) => {

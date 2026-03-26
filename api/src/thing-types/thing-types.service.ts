@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, ForbiddenException, OnModuleInit, Logger } from '@nestjs/common';
 import { ThingTypesRepository } from './thing-types.repository';
+import { ThingType } from './schemas/thing-type.schema';
 import { CreateThingTypeDto } from './dto/create-thing-type.dto';
 import { UpdateThingTypeDto } from './dto/update-thing-type.dto';
 
@@ -31,11 +32,20 @@ export class ThingTypesService implements OnModuleInit {
   constructor(private readonly repository: ThingTypesRepository) {}
 
   async onModuleInit() {
-    const count = await this.repository.count();
-    if (count === 0) {
-      this.logger.log('Seeding default thing types...');
-      await this.repository.insertMany(SEED_TYPES.map((t) => ({ ...t, isSystem: true })));
-      this.logger.log(`Seeded ${SEED_TYPES.length} thing types`);
+    const existingCount = await this.repository.count();
+    this.logger.log(`Found ${existingCount} existing thing types, checking for ${SEED_TYPES.length} seed types...`);
+    let seeded = 0;
+    for (const seedType of SEED_TYPES) {
+      const exists = await this.repository.findBySlug(seedType.slug);
+      if (!exists) {
+        await this.repository.create({ ...seedType, isSystem: true } as Partial<ThingType>);
+        seeded++;
+      }
+    }
+    if (seeded > 0) {
+      this.logger.log(`Seeded ${seeded} new thing types`);
+    } else {
+      this.logger.log('All seed types already present');
     }
   }
 
@@ -56,7 +66,7 @@ export class ThingTypesService implements OnModuleInit {
   async create(dto: CreateThingTypeDto) {
     const existing = await this.repository.findBySlug(dto.slug);
     if (existing) throw new ConflictException(`Slug "${dto.slug}" already exists`);
-    return this.repository.create(dto);
+    return this.repository.create(dto as Partial<ThingType>);
   }
 
   async update(id: string, dto: UpdateThingTypeDto) {
@@ -66,7 +76,7 @@ export class ThingTypesService implements OnModuleInit {
         throw new ConflictException(`Slug "${dto.slug}" already exists`);
       }
     }
-    const updated = await this.repository.update(id, dto);
+    const updated = await this.repository.update(id, dto as Partial<ThingType>);
     if (!updated) throw new NotFoundException('Thing type not found');
     return updated;
   }

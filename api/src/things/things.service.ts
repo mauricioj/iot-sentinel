@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, OnModuleInit } from '@nestjs/common';
 import { ThingsRepository } from './things.repository';
 import { NetworksService } from '../networks/networks.service';
 import { CryptoService } from '../crypto/crypto.service';
@@ -9,12 +9,33 @@ import { Thing } from './schemas/thing.schema';
 import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
 
 @Injectable()
-export class ThingsService {
+export class ThingsService implements OnModuleInit {
+  private readonly logger = new Logger(ThingsService.name);
+
   constructor(
     private readonly thingsRepository: ThingsRepository,
     private readonly networksService: NetworksService,
     private readonly cryptoService: CryptoService,
   ) {}
+
+  async onModuleInit() {
+    // Migrate old status field to new registrationStatus + healthStatus
+    const ThingModel = this.thingsRepository.getModel();
+    const oldDocs = await ThingModel.find({ status: { $exists: true } }).exec();
+    if (oldDocs.length > 0) {
+      this.logger.log(`Migrating ${oldDocs.length} things from old status field...`);
+      for (const doc of oldDocs) {
+        const oldStatus = (doc as any).status;
+        const regStatus = oldStatus === 'discovered' ? 'discovered' : 'registered';
+        const healthStatus = oldStatus === 'online' ? 'online' : oldStatus === 'offline' ? 'offline' : 'unknown';
+        await ThingModel.updateOne(
+          { _id: doc._id },
+          { $set: { registrationStatus: regStatus, healthStatus }, $unset: { status: 1 } },
+        );
+      }
+      this.logger.log('Migration complete');
+    }
+  }
 
   async create(dto: CreateThingDto): Promise<Thing> {
     if (dto.networkId) {
@@ -47,10 +68,15 @@ export class ThingsService {
     if (dto.credentials) {
       dto.credentials = this.encryptCredentials(dto.credentials);
     }
-    const thing = await this.thingsRepository.update(id, dto as Partial<UpdateThingDto & Record<string, unknown>>);
-    if (!thing) {
-      throw new NotFoundException('Thing not found');
+    // Auto-register discovered things when user edits them
+    const existing = await this.thingsRepository.findById(id);
+    if (!existing) throw new NotFoundException('Thing not found');
+    const updateData: Record<string, unknown> = { ...dto };
+    if ((existing as any).registrationStatus === 'discovered') {
+      updateData.registrationStatus = 'registered';
     }
+    const thing = await this.thingsRepository.update(id, updateData);
+    if (!thing) throw new NotFoundException('Thing not found');
     return thing;
   }
 
@@ -61,8 +87,8 @@ export class ThingsService {
     }
   }
 
-  async deleteByStatus(status: string): Promise<{ deleted: number }> {
-    const deleted = await this.thingsRepository.deleteByStatus(status);
+  async deleteDiscovered(): Promise<{ deleted: number }> {
+    const deleted = await this.thingsRepository.deleteByRegistrationStatus('discovered');
     return { deleted };
   }
 

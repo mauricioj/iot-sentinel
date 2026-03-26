@@ -1,21 +1,27 @@
 """Real nmap scanner — requires nmap installed and NET_ADMIN capabilities."""
+import re
 import nmap
 import logging
 
+from mac_vendor_lookup import MacLookup
+
 logger = logging.getLogger(__name__)
+
+# Load OUI database once at module level
+mac_lookup = MacLookup()
 
 
 def scan_network(cidr: str, scan_type: str = 'discovery') -> list[dict]:
     """
     Run nmap scan on a CIDR range.
-    Returns list of discovered hosts with MAC, IP, hostname, ports.
+    Returns list of discovered hosts with MAC, IP, hostname, vendor, os, ports.
     """
     nm = nmap.PortScanner()
 
     if scan_type == 'discovery':
-        # Service version detection
+        # Service version detection + NetBIOS for better hostname resolution
         logger.info(f"Running discovery scan on {cidr}")
-        nm.scan(hosts=cidr, arguments='-sn -sV --max-retries 1 --host-timeout 30s')
+        nm.scan(hosts=cidr, arguments='-sn -sV --script nbstat --max-retries 1 --host-timeout 30s')
     elif scan_type == 'status_check':
         # Ping sweep only
         logger.info(f"Running status check on {cidr}")
@@ -47,6 +53,32 @@ def parse_nmap_results(nm: nmap.PortScanner) -> list[dict]:
         if host_info.get('hostnames'):
             hostname = host_info['hostnames'][0].get('name', '')
 
+        # Fallback: extract NetBIOS hostname from nbstat script output
+        if not hostname:
+            for script in host_info.get('hostscript', []):
+                if script.get('id') == 'nbstat':
+                    output = script.get('output', '')
+                    match = re.search(r'NetBIOS name:\s*(\S+)', output, re.IGNORECASE)
+                    if match:
+                        hostname = match.group(1)
+                    break
+
+        # Extract vendor from nmap, fallback to mac-vendor-lookup
+        vendor = ''
+        if mac:
+            vendor = host_info.get('vendor', {}).get(mac, '')
+            if not vendor:
+                try:
+                    vendor = mac_lookup.lookup(mac)
+                except Exception:
+                    pass
+
+        # Extract OS from osmatch (populated by -O flag in deep_scan)
+        os_info = ''
+        os_matches = host_info.get('osmatch', [])
+        if os_matches:
+            os_info = os_matches[0].get('name', '')
+
         # Extract ports
         ports = []
         for proto in host_info.all_protocols():
@@ -64,6 +96,8 @@ def parse_nmap_results(nm: nmap.PortScanner) -> list[dict]:
             'macAddress': mac,
             'ipAddress': host_ip,
             'hostname': hostname,
+            'vendor': vendor,
+            'os': os_info,
             'ports': ports,
         })
 

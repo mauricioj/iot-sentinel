@@ -47,6 +47,12 @@ export class DiscoveredHost {
   @Prop({ default: '' })
   hostname: string;
 
+  @Prop({ default: '' })
+  vendor: string;
+
+  @Prop({ default: '' })
+  os: string;
+
   @Prop({ type: [DiscoveredPort], default: [] })
   ports: DiscoveredPort[];
 

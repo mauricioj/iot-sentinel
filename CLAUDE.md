@@ -38,7 +38,9 @@ Docker Compose: `frontend:9000`, `api:9001`, `worker`, `mongodb:9017`, `redis:90
 - **Services:** `src/services/*.service.ts` — each domain has its own service calling `api()` from `services/api.ts`
 - **Components:** `src/components/ui/` (generic), `src/components/layout/` (shell), `src/components/things/` (domain)
 - **Auth:** `AuthProvider` context wraps app, `AuthGuard` protects dashboard routes
-- **API calls:** `api<T>(path, options)` — auto token refresh on 401, handles empty body responses
+- **API calls:** `api<T>(path, options)` — relative URLs only (`/api/v1/...`), auto token refresh on 401, handles empty body responses
+- **API proxy:** Next.js middleware rewrites `/api/*` → API container (`API_INTERNAL_URL`), no `NEXT_PUBLIC_API_URL` needed
+- **WebSocket:** Fetches `API_PUBLIC_URL` from `/runtime-config` route at runtime (no build-time baking)
 
 ### Worker (worker/)
 - **Auto-detect mock mode:** On Docker Desktop (Windows/macOS), mock mode activates automatically
@@ -70,8 +72,8 @@ Local → Network/VLAN → Thing → Channels (embedded)
 | scanner | `/api/v1/scanner/discover,jobs` | Rate limited (1 concurrent, 60s cooldown) |
 | monitor | `/api/v1/monitor/status,check/:id` | |
 | notifications | `/api/v1/notifications`, `/api/v1/notifications/rules` | WebSocket at `/ws` |
-| backup | `/api/v1/backup/export,restore` | Password-protected .json.gz |
-| settings | `/api/v1/settings`, `/api/v1/setup/status,complete` | Setup wizard |
+| backup | `/api/v1/backup/export,restore`, `/api/v1/setup/restore` | Password-protected .json.gz, setup restore (no auth) |
+| settings | `/api/v1/settings`, `/api/v1/setup/status,complete` | Setup wizard (fresh or restore) |
 | dashboard | `/api/v1/dashboard/stats` | Thing counts by status |
 | crypto | (internal) | AES-256-GCM, encryptWithPassword for backups |
 | health | `/health`, `/health/ready` | MongoDB + Redis checks |
@@ -86,12 +88,25 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev with
 
 First access: http://localhost:9000 → Setup wizard → Create admin → Login
 
-## Testing
+## Testing & Validation
 
 ```bash
-cd api && npx jest --verbose           # 42 unit tests
-cd api && npx jest --config test/jest-e2e.config.ts --forceExit  # 20 E2E tests
+cd api && npx jest --verbose           # Unit tests
+cd api && npx jest --config test/jest-e2e.config.ts --forceExit  # E2E tests
+cd frontend && npx next build          # Frontend build (TypeScript + static generation)
 ```
+
+**IMPORTANT: Always run Docker builds as final validation before declaring work complete.**
+Jest and `next build` run locally with different TypeScript settings than the Docker build.
+The Docker build uses strict `tsc` and will catch type errors that local tools miss.
+
+```bash
+docker build -t test-api -f api/Dockerfile api/
+docker build -t test-frontend -f frontend/Dockerfile frontend/
+docker build -t test-worker -f worker/Dockerfile worker/
+```
+
+Full release (build + tag + push): `./scripts/release.sh <version>`
 
 ## Design Docs
 

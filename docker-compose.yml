@@ -29,7 +29,8 @@ services:
     ports:
       - "${FRONTEND_PORT:-9000}:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://api:4000
+      API_INTERNAL_URL: http://api:4000
+      API_PORT: ${API_PORT:-9001}
     depends_on:
       - api
 
@@ -66,6 +67,8 @@ services:
     environment:
       REDIS_URL: redis://localhost:${REDIS_PORT:-9079}
       SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-auto}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-300}
+      API_INTERNAL_URL: http://localhost:${API_PORT:-9001}
     depends_on:
       - redis
 

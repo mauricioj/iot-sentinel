@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9001'}/api/v1/auth/refresh`, {
+      const res = await fetch('/api/v1/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
