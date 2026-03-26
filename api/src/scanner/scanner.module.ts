@@ -10,6 +10,7 @@ import { NetworksModule } from '../networks/networks.module';
 import { ThingsModule } from '../things/things.module';
 import { SettingsModule } from '../settings/settings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { StatusHistoryModule } from '../status-history/status-history.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ThingsModule,
     SettingsModule,
     NotificationsModule,
+    StatusHistoryModule,
   ],
   controllers: [ScannerController],
   providers: [ScannerService, ScannerRepository, ScannerProcessor],

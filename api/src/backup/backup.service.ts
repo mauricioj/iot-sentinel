@@ -12,6 +12,7 @@ import { Thing } from '../things/schemas/thing.schema';
 import { Group } from '../groups/schemas/group.schema';
 import { NotificationRule } from '../notifications/schemas/notification-rule.schema';
 import { ThingType } from '../thing-types/schemas/thing-type.schema';
+import { StatusEvent } from '../status-history/schemas/status-event.schema';
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -28,10 +29,11 @@ export class BackupService {
     @InjectModel(Group.name) private readonly groupModel: Model<Group>,
     @InjectModel(NotificationRule.name) private readonly ruleModel: Model<NotificationRule>,
     @InjectModel(ThingType.name) private readonly thingTypeModel: Model<ThingType>,
+    @InjectModel(StatusEvent.name) private readonly statusEventModel: Model<StatusEvent>,
   ) {}
 
   async export(password: string): Promise<Buffer> {
-    const [settings, users, locals, networks, things, groups, rules, thingTypes] = await Promise.all([
+    const [settings, users, locals, networks, things, groups, rules, thingTypes, statusEvents] = await Promise.all([
       this.settingsModel.find().lean().exec(),
       this.userModel.find().select('-password').lean().exec(),
       this.localModel.find().lean().exec(),
@@ -40,6 +42,7 @@ export class BackupService {
       this.groupModel.find().lean().exec(),
       this.ruleModel.find().lean().exec(),
       this.thingTypeModel.find().lean().exec(),
+      this.statusEventModel.find().lean().exec(),
     ]);
 
     // Re-encrypt credentials with backup password
@@ -64,6 +67,7 @@ export class BackupService {
       groups,
       notificationRules: rules,
       thingTypes,
+      statusEvents,
     };
 
     const json = JSON.stringify(backup);
@@ -119,6 +123,11 @@ export class BackupService {
       await this.ruleModel.deleteMany({});
       await this.ruleModel.insertMany(backup.notificationRules);
       counts.notificationRules = backup.notificationRules.length;
+    }
+    if (backup.statusEvents?.length) {
+      await this.statusEventModel.deleteMany({});
+      await this.statusEventModel.insertMany(backup.statusEvents);
+      counts.statusEvents = backup.statusEvents.length;
     }
 
     return { imported: counts };

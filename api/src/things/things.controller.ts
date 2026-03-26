@@ -9,13 +9,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/interfaces/user.interface';
+import { StatusHistoryService } from '../status-history/status-history.service';
 
 @ApiTags('Things')
 @ApiBearerAuth()
 @Controller('api/v1/things')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ThingsController {
-  constructor(private readonly thingsService: ThingsService) {}
+  constructor(
+    private readonly thingsService: ThingsService,
+    private readonly statusHistoryService: StatusHistoryService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN)
@@ -28,6 +32,12 @@ export class ThingsController {
   @ApiOperation({ summary: 'List things with filters' })
   findAll(@Query() query: ThingQueryDto) {
     return this.thingsService.findAll(query);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get status history and uptime for a thing' })
+  getHistory(@Param('id') id: string, @Query('range') range: string = '24h') {
+    return this.statusHistoryService.getHistory(id, range);
   }
 
   @Get(':id')
@@ -47,7 +57,7 @@ export class ThingsController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete all discovered (unregistered) things' })
   deleteDiscovered() {
-    return this.thingsService.deleteByStatus('discovered');
+    return this.thingsService.deleteDiscovered();
   }
 
   @Delete(':id')

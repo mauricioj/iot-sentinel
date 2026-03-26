@@ -5,7 +5,8 @@ import { ScannerRepository } from './scanner.repository';
 import { ThingsRepository } from '../things/things.repository';
 import { NotificationsService } from '../notifications/notifications.service';
 import { ScanStatus, DiscoveredHost } from './schemas/scan-job.schema';
-import { ThingStatus } from '../things/schemas/thing.schema';
+import { RegistrationStatus, HealthStatus } from '../things/schemas/thing.schema';
+import { StatusHistoryService } from '../status-history/status-history.service';
 
 /**
  * Listens for scan job completion events published by the Python worker
@@ -24,6 +25,7 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly thingsRepository: ThingsRepository,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly statusHistoryService: StatusHistoryService,
   ) {}
 
   async onModuleInit() {
@@ -92,10 +94,14 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
           : null;
 
         if (existing) {
+          const oldHealth = (existing as any).healthStatus;
+          if (oldHealth !== 'online') {
+            await this.statusHistoryService.recordTransition(existing._id.toString(), 'online');
+          }
           await this.thingsRepository.update(existing._id.toString(), {
             ipAddress: host.ipAddress,
             hostname: host.hostname || existing.hostname,
-            status: ThingStatus.ONLINE,
+            healthStatus: HealthStatus.ONLINE,
             lastSeenAt: new Date(),
             ports: host.ports || [],
             ...(host.vendor && !existing.vendor ? { vendor: host.vendor } : {}),
@@ -112,7 +118,8 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
             hostname: host.hostname || '',
             vendor: host.vendor || '',
             os: host.os || '',
-            status: ThingStatus.DISCOVERED,
+            registrationStatus: RegistrationStatus.DISCOVERED,
+            healthStatus: HealthStatus.ONLINE,
             lastSeenAt: new Date(),
             ports: host.ports || [],
           } as any);

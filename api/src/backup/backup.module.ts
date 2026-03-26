@@ -11,6 +11,7 @@ import { Thing, ThingSchema } from '../things/schemas/thing.schema';
 import { Group, GroupSchema } from '../groups/schemas/group.schema';
 import { NotificationRule, NotificationRuleSchema } from '../notifications/schemas/notification-rule.schema';
 import { ThingType, ThingTypeSchema } from '../thing-types/schemas/thing-type.schema';
+import { StatusEvent, StatusEventSchema } from '../status-history/schemas/status-event.schema';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ThingType, ThingTypeSchema } from '../thing-types/schemas/thing-type.sc
       { name: Group.name, schema: GroupSchema },
       { name: NotificationRule.name, schema: NotificationRuleSchema },
       { name: ThingType.name, schema: ThingTypeSchema },
+      { name: StatusEvent.name, schema: StatusEventSchema },
     ]),
   ],
   controllers: [BackupController],
