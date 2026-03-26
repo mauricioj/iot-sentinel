@@ -11,16 +11,13 @@ import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { getIconComponent } from '@/components/ui/icon-picker';
 import { thingsService } from '@/services/things.service';
 import { networksService } from '@/services/networks.service';
 import { groupsService } from '@/services/groups.service';
 import { usePagination } from '@/hooks/use-pagination';
+import { useThingTypes } from '@/contexts/thing-types-context';
 import { Thing, Network, Group } from '@/types';
-
-const THING_TYPES = [
-  'router', 'switch', 'access_point', 'server', 'workstation', 'printer',
-  'camera', 'sensor', 'iot_device', 'smart_tv', 'nas', 'firewall', 'other',
-];
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -32,6 +29,7 @@ const STATUS_OPTIONS = [
 
 export default function ThingsPage() {
   const router = useRouter();
+  const { thingTypes } = useThingTypes();
   const [things, setThings] = useState<Thing[]>([]);
   const [loading, setLoading] = useState(true);
   const [networks, setNetworks] = useState<Network[]>([]);
@@ -52,7 +50,6 @@ export default function ThingsPage() {
 
   const [form, setForm] = useState({
     name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '',
-    credentials: { username: '', password: '', notes: '' },
   });
 
   const pagination = usePagination();
@@ -105,14 +102,10 @@ export default function ThingsPage() {
       if (form.networkId) payload.networkId = form.networkId;
       if (form.macAddress) payload.macAddress = form.macAddress;
       if (form.ipAddress) payload.ipAddress = form.ipAddress;
-      const creds = form.credentials;
-      if (creds.username || creds.password || creds.notes) {
-        payload.credentials = creds;
-      }
 
       const created = await thingsService.create(payload as Partial<Thing>);
       setModalOpen(false);
-      setForm({ name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '', credentials: { username: '', password: '', notes: '' } });
+      setForm({ name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '' });
       router.push(`/things/${created._id}`);
     } catch (err) {
       console.error(err);
@@ -160,7 +153,7 @@ export default function ThingsPage() {
 
   const typeOptions = [
     { value: '', label: 'Select type' },
-    ...THING_TYPES.map((t) => ({ value: t, label: t.replace('_', ' ') })),
+    ...thingTypes.map((t) => ({ value: t.slug, label: t.name })),
   ];
 
   const networkSelectOptions = [
@@ -169,10 +162,23 @@ export default function ThingsPage() {
   ];
 
   const columns = [
-    { key: 'name', header: 'Name' },
-    { key: 'type', header: 'Type', render: (item: Thing) => item.type || '-' },
+    {
+      key: 'name',
+      header: 'Name',
+      render: (item: Thing) => {
+        const tt = thingTypes.find((t) => t.slug === item.type);
+        const Icon = getIconComponent(tt?.icon || 'help-circle');
+        return (
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 shrink-0" style={{ color: tt?.color || '#94a3b8' }} />
+            <span>{item.name}</span>
+          </div>
+        );
+      },
+    },
     { key: 'ipAddress', header: 'IP Address', render: (item: Thing) => item.ipAddress || '-' },
     { key: 'macAddress', header: 'MAC Address', render: (item: Thing) => item.macAddress || '-' },
+    { key: 'vendor', header: 'Vendor', render: (item: Thing) => item.vendor || '-' },
     {
       key: 'status',
       header: 'Status',
@@ -315,30 +321,6 @@ export default function ThingsPage() {
             value={form.ipAddress}
             onChange={(e) => setForm({ ...form, ipAddress: e.target.value })}
           />
-          <div className="border-t border-border pt-3">
-            <p className="text-sm font-medium mb-2">Credentials (optional)</p>
-            <div className="space-y-2">
-              <Input
-                id="thing-username"
-                label="Username"
-                value={form.credentials.username}
-                onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, username: e.target.value } })}
-              />
-              <Input
-                id="thing-password"
-                label="Password"
-                type="password"
-                value={form.credentials.password}
-                onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, password: e.target.value } })}
-              />
-              <Input
-                id="thing-notes"
-                label="Notes"
-                value={form.credentials.notes}
-                onChange={(e) => setForm({ ...form, credentials: { ...form.credentials, notes: e.target.value } })}
-              />
-            </div>
-          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
