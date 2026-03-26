@@ -25,6 +25,7 @@ const mockModels = {
   things: makeModelMock(),
   groups: makeModelMock(),
   notificationRules: makeModelMock(),
+  thingTypes: makeModelMock(),
 };
 
 const mockCryptoService = {
@@ -49,6 +50,7 @@ describe('BackupService', () => {
         { provide: getModelToken('Thing'), useValue: mockModels.things },
         { provide: getModelToken('Group'), useValue: mockModels.groups },
         { provide: getModelToken('NotificationRule'), useValue: mockModels.notificationRules },
+        { provide: getModelToken('ThingType'), useValue: mockModels.thingTypes },
       ],
     }).compile();
     service = module.get<BackupService>(BackupService);

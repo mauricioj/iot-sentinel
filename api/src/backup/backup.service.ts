@@ -11,6 +11,7 @@ import { Network } from '../networks/schemas/network.schema';
 import { Thing } from '../things/schemas/thing.schema';
 import { Group } from '../groups/schemas/group.schema';
 import { NotificationRule } from '../notifications/schemas/notification-rule.schema';
+import { ThingType } from '../thing-types/schemas/thing-type.schema';
 
 const gzip = promisify(zlib.gzip);
 const gunzip = promisify(zlib.gunzip);
@@ -26,10 +27,11 @@ export class BackupService {
     @InjectModel(Thing.name) private readonly thingModel: Model<Thing>,
     @InjectModel(Group.name) private readonly groupModel: Model<Group>,
     @InjectModel(NotificationRule.name) private readonly ruleModel: Model<NotificationRule>,
+    @InjectModel(ThingType.name) private readonly thingTypeModel: Model<ThingType>,
   ) {}
 
   async export(password: string): Promise<Buffer> {
-    const [settings, users, locals, networks, things, groups, rules] = await Promise.all([
+    const [settings, users, locals, networks, things, groups, rules, thingTypes] = await Promise.all([
       this.settingsModel.find().lean().exec(),
       this.userModel.find().select('-password').lean().exec(),
       this.localModel.find().lean().exec(),
@@ -37,6 +39,7 @@ export class BackupService {
       this.thingModel.find().lean().exec(),
       this.groupModel.find().lean().exec(),
       this.ruleModel.find().lean().exec(),
+      this.thingTypeModel.find().lean().exec(),
     ]);
 
     // Re-encrypt credentials with backup password
@@ -60,6 +63,7 @@ export class BackupService {
       things: processedThings,
       groups,
       notificationRules: rules,
+      thingTypes,
     };
 
     const json = JSON.stringify(backup);
@@ -84,6 +88,12 @@ export class BackupService {
 
     // Clear and import
     const counts: Record<string, number> = {};
+
+    if (backup.thingTypes?.length) {
+      await this.thingTypeModel.deleteMany({});
+      await this.thingTypeModel.insertMany(backup.thingTypes);
+      counts.thingTypes = backup.thingTypes.length;
+    }
 
     if (backup.locals?.length) {
       await this.localModel.deleteMany({});
@@ -112,5 +122,30 @@ export class BackupService {
     }
 
     return { imported: counts };
+  }
+
+  async restoreFull(data: Buffer, password: string): Promise<{ imported: Record<string, number> }> {
+    const result = await this.restore(data, password);
+    const jsonBuffer = await gunzip(data);
+    const backup = JSON.parse(jsonBuffer.toString());
+
+    // Also restore settings and users (for setup wizard restore)
+    if (backup.settings?.length) {
+      await this.settingsModel.deleteMany({});
+      await this.settingsModel.insertMany(backup.settings);
+      result.imported.settings = backup.settings.length;
+    }
+    if (backup.users?.length) {
+      await this.userModel.deleteMany({});
+      await this.userModel.insertMany(backup.users);
+      result.imported.users = backup.users.length;
+    }
+
+    return result;
+  }
+
+  async isSetupComplete(): Promise<boolean> {
+    const settings = await this.settingsModel.findOne().lean().exec();
+    return !!settings?.setupCompleted;
   }
 }

@@ -10,6 +10,7 @@ import { Network, NetworkSchema } from '../networks/schemas/network.schema';
 import { Thing, ThingSchema } from '../things/schemas/thing.schema';
 import { Group, GroupSchema } from '../groups/schemas/group.schema';
 import { NotificationRule, NotificationRuleSchema } from '../notifications/schemas/notification-rule.schema';
+import { ThingType, ThingTypeSchema } from '../thing-types/schemas/thing-type.schema';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationRule, NotificationRuleSchema } from '../notifications/schem
       { name: Thing.name, schema: ThingSchema },
       { name: Group.name, schema: GroupSchema },
       { name: NotificationRule.name, schema: NotificationRuleSchema },
+      { name: ThingType.name, schema: ThingTypeSchema },
     ]),
   ],
   controllers: [BackupController],
