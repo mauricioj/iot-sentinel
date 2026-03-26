@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken } from '@/services/api';
 
-const WS_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000') + '/ws';
+const WS_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9001') + '/ws';
 
 export function useWebSocket() {
   const socketRef = useRef<Socket | null>(null);

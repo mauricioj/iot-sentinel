@@ -10,7 +10,7 @@ api/         → NestJS (TypeScript, Mongoose, Bull, Socket.IO)
 worker/      → Python (nmap scanner, Bull queue consumer)
 ```
 
-Docker Compose: `frontend:3000`, `api:4000`, `worker`, `mongodb:27017`, `redis:6379`
+Docker Compose: `frontend:9000`, `api:9001`, `worker`, `mongodb:9017`, `redis:9079` (host ports, configurable via `.env`)
 
 ## Tech Stack
 
@@ -84,7 +84,7 @@ docker compose up -d          # Production
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d  # Dev with hot reload
 ```
 
-First access: http://localhost:3000 → Setup wizard → Create admin → Login
+First access: http://localhost:9000 → Setup wizard → Create admin → Login
 
 ## Testing
 

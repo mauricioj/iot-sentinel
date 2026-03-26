@@ -17,7 +17,7 @@ describe('App (e2e)', () => {
     process.env.MONGODB_URI = uri;
     process.env.JWT_SECRET = 'test-secret';
     process.env.ENCRYPTION_KEY_PATH = './test/test-secrets/encryption.key';
-    process.env.REDIS_URL = 'redis://localhost:6379';
+    process.env.REDIS_URL = 'redis://localhost:9079';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

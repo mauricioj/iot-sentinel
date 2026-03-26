@@ -10,7 +10,7 @@ export class HealthController {
   private readonly redis: Redis;
 
   constructor(@InjectConnection() private readonly connection: Connection) {
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:9079', {
       lazyConnect: true,
       maxRetriesPerRequest: 1,
     });

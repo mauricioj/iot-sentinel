@@ -67,7 +67,7 @@ curl -O https://raw.githubusercontent.com/mauricioj/iot-sentinel/main/docker-com
 docker compose -f docker-compose.prod.yml up -d
 
 # 3. Open the app
-# http://localhost:3000 → Setup wizard → Create admin → Done
+# http://localhost:9000 → Setup wizard → Create admin → Done
 ```
 
 That's it. MongoDB and Redis are included. No external dependencies.
@@ -91,11 +91,11 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
 Services will start with:
-- **Frontend** (Next.js) on `http://localhost:3000` — hot reload via volume mount
-- **API** (NestJS) on `http://localhost:4000` — `nodemon` watch mode
+- **Frontend** (Next.js) on `http://localhost:9000` — hot reload via volume mount
+- **API** (NestJS) on `http://localhost:9001` — `nodemon` watch mode
 - **Worker** (Python) — mock scanner enabled (`SCANNER_MOCK_MODE=true`)
-- **MongoDB** on `localhost:27017`
-- **Redis** on `localhost:6379`
+- **MongoDB** on `localhost:9017`
+- **Redis** on `localhost:9079`
 
 ### Running Tests
 
@@ -206,7 +206,7 @@ iot-sentinel/
 The API is documented with Swagger/OpenAPI. Once the stack is running, visit:
 
 ```
-http://localhost:4000/api/docs
+http://localhost:9001/api/docs
 ```
 
 All endpoints are prefixed with `/api/v1/`. Key resource paths:
@@ -248,8 +248,11 @@ Key variables used by `docker-compose.prod.yml` (all have defaults for local use
 | `MONGO_INITDB_ROOT_USERNAME` | `sentinel` | MongoDB root user |
 | `MONGO_INITDB_ROOT_PASSWORD` | `sentinel_secret` | MongoDB root password |
 | `SCANNER_MOCK_MODE` | `auto` | `true` / `false` / `auto` (auto-detects Docker Desktop) |
-| `API_PORT` | `4000` | Host port for the API |
-| `FRONTEND_URL` | `http://localhost:3000` | Used for CORS |
+| `FRONTEND_PORT` | `9000` | Host port for the frontend |
+| `API_PORT` | `9001` | Host port for the API |
+| `MONGO_PORT` | `9017` | Host port for MongoDB |
+| `REDIS_PORT` | `9079` | Host port for Redis |
+| `FRONTEND_URL` | `http://localhost:9000` | Used for CORS |
 
 ---
 

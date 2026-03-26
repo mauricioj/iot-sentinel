@@ -27,7 +27,7 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+    const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:9079';
     this.subscriber = new Redis(redisUrl);
 
     this.subscriber.subscribe('bull:scanner:completed', (err) => {
@@ -163,7 +163,7 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
 
     // It's a Bull Redis ID — read job data from Redis to get the MongoDB job ID
     try {
-      const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+      const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:9079';
       const reader = new Redis(redisUrl);
       const jobData = await reader.hget(`bull:scanner:${id}`, 'data');
       await reader.quit();

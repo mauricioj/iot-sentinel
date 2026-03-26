@@ -7,7 +7,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-9017}:27017"
     volumes:
       - mongodb_data:/data/db
 
@@ -16,7 +16,7 @@ services:
     container_name: iot-sentinel-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-9079}:6379"
     volumes:
       - redis_data:/data
 
@@ -27,7 +27,7 @@ services:
     container_name: iot-sentinel-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-9000}:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://api:4000
     depends_on:
@@ -40,14 +40,14 @@ services:
     container_name: iot-sentinel-api
     restart: unless-stopped
     ports:
-      - "${API_PORT:-4000}:4000"
+      - "${API_PORT:-9001}:4000"
     environment:
       MONGODB_URI: ${MONGODB_URI}
       REDIS_URL: ${REDIS_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-15m}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:9000}
     volumes:
       - api_secrets:/data/secrets
     depends_on:
@@ -64,7 +64,7 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      REDIS_URL: redis://localhost:6379
+      REDIS_URL: redis://localhost:${REDIS_PORT:-9079}
       SCANNER_MOCK_MODE: ${SCANNER_MOCK_MODE:-auto}
     depends_on:
       - redis

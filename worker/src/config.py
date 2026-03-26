@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:9079')
 QUEUE_NAME = 'bull:scanner'
 
 def _detect_mock_mode() -> bool:
