@@ -63,6 +63,9 @@ export interface Thing {
   macAddress: string;
   ipAddress: string;
   hostname: string;
+  vendor: string;
+  os: string;
+  description: string;
   status: 'online' | 'offline' | 'unknown' | 'discovered';
   lastSeenAt: string;
   ports: { port: number; protocol: string; service: string; version: string }[];
@@ -79,6 +82,24 @@ export interface Group {
   icon: string;
   color: string;
   description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThingTypeCapabilities {
+  enableChannels: boolean;
+  enablePortScan: boolean;
+  enableCredentials: boolean;
+}
+
+export interface ThingTypeItem {
+  _id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  capabilities: ThingTypeCapabilities;
+  isSystem: boolean;
   createdAt: string;
   updatedAt: string;
 }
