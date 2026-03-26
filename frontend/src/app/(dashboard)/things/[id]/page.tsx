@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Trash2, Plus, X, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, X, ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -12,22 +12,21 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CredentialsReveal } from '@/components/things/credentials-reveal';
 import { getIconComponent } from '@/components/ui/icon-picker';
+import { useThingTypes } from '@/contexts/thing-types-context';
+import { scannerService } from '@/services/scanner.service';
 import { thingsService } from '@/services/things.service';
 import { networksService } from '@/services/networks.service';
 import { groupsService } from '@/services/groups.service';
 import { Thing, Network, Group } from '@/types';
 
-const THING_TYPES = [
-  'router', 'switch', 'access_point', 'server', 'workstation', 'printer',
-  'camera', 'sensor', 'iot_device', 'smart_tv', 'nas', 'firewall', 'other',
-];
-
 export default function ThingDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { thingTypes, getBySlug } = useThingTypes();
 
   const [thing, setThing] = useState<Thing | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [networks, setNetworks] = useState<Network[]>([]);
   const [allGroups, setAllGroups] = useState<Group[]>([]);
@@ -37,6 +36,7 @@ export default function ThingDetailPage() {
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '', type: '', networkId: '', macAddress: '', ipAddress: '',
+    vendor: '', os: '', description: '',
     credentials: { username: '', password: '', notes: '' },
   });
 
@@ -60,6 +60,9 @@ export default function ThingDetailPage() {
         networkId: data.networkId,
         macAddress: data.macAddress,
         ipAddress: data.ipAddress,
+        vendor: data.vendor || '',
+        os: data.os || '',
+        description: data.description || '',
         credentials: data.credentials || { username: '', password: '', notes: '' },
       });
     } catch (err) {
@@ -152,7 +155,7 @@ export default function ThingDetailPage() {
     }
   };
 
-  const typeOptions = THING_TYPES.map((t) => ({ value: t, label: t.replace('_', ' ') }));
+  const typeOptions = thingTypes.map((t) => ({ value: t.slug, label: t.name }));
   const networkOptions = networks.map((n) => ({ value: n._id, label: n.name }));
 
   if (loading) {
@@ -167,6 +170,20 @@ export default function ThingDetailPage() {
     return <div className="text-center py-12 text-muted-foreground">Thing not found.</div>;
   }
 
+  const thingTypeData = thing ? getBySlug(thing.type) : undefined;
+
+  const handleDeepScan = async () => {
+    if (!thing?.networkId) return;
+    setScanning(true);
+    try {
+      await scannerService.discover(thing.networkId, 'deep_scan');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const credentials = thing.credentials || { username: '', password: '', notes: '' };
   const assignedGroups = allGroups.filter((g) => (thing.groupIds || []).includes(g._id));
   const availableGroups = allGroups.filter((g) => !(thing.groupIds || []).includes(g._id));
@@ -179,6 +196,11 @@ export default function ThingDetailPage() {
           Back
         </Button>
         <h1 className="text-2xl font-bold flex-1">{thing.name}</h1>
+        {thingTypeData?.capabilities.enablePortScan && (
+          <Button variant="secondary" size="sm" onClick={handleDeepScan} disabled={scanning}>
+            {scanning ? 'Scanning...' : <><Search className="h-4 w-4 mr-1" /> Deep Scan</>}
+          </Button>
+        )}
         <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="h-4 w-4 mr-1" />
           Edit
@@ -220,11 +242,25 @@ export default function ThingDetailPage() {
             <p className="font-medium mt-1">{thing.hostname || '-'}</p>
           </div>
           <div>
+            <p className="text-muted-foreground">Vendor</p>
+            <p className="font-medium mt-1">{thing.vendor || '-'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">OS</p>
+            <p className="font-medium mt-1">{thing.os || '-'}</p>
+          </div>
+          <div>
             <p className="text-muted-foreground">Last Seen</p>
             <p className="font-medium mt-1">
               {thing.lastSeenAt ? new Date(thing.lastSeenAt).toLocaleString() : '-'}
             </p>
           </div>
+          {thing.description && (
+            <div className="col-span-full border-t border-border pt-3 mt-2">
+              <p className="text-muted-foreground">Description</p>
+              <p className="font-medium mt-1">{thing.description}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -296,7 +332,7 @@ export default function ThingDetailPage() {
       </Card>
 
       {/* Channels Section */}
-      <Card>
+      {thingTypeData?.capabilities.enableChannels !== false && <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Channels</CardTitle>
@@ -362,7 +398,7 @@ export default function ThingDetailPage() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Ports Section */}
       {thing.ports && thing.ports.length > 0 && (
@@ -398,11 +434,13 @@ export default function ThingDetailPage() {
       )}
 
       {/* Credentials Section */}
-      <Card>
-        <CardContent>
-          <CredentialsReveal credentials={credentials} />
-        </CardContent>
-      </Card>
+      {thingTypeData?.capabilities.enableCredentials !== false && (
+        <Card>
+          <CardContent>
+            <CredentialsReveal credentials={credentials} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Metadata Section */}
       {thing.metadata && Object.keys(thing.metadata).length > 0 && (
@@ -453,6 +491,27 @@ export default function ThingDetailPage() {
             label="IP Address"
             value={editForm.ipAddress}
             onChange={(e) => setEditForm({ ...editForm, ipAddress: e.target.value })}
+          />
+          <Input
+            id="edit-vendor"
+            label="Vendor"
+            placeholder="e.g., Hikvision"
+            value={editForm.vendor}
+            onChange={(e) => setEditForm({ ...editForm, vendor: e.target.value })}
+          />
+          <Input
+            id="edit-os"
+            label="OS"
+            placeholder="e.g., Linux 5.4"
+            value={editForm.os}
+            onChange={(e) => setEditForm({ ...editForm, os: e.target.value })}
+          />
+          <Input
+            id="edit-description"
+            label="Description"
+            placeholder="e.g., Front door IP camera"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
           />
           <div className="border-t border-border pt-3">
             <p className="text-sm font-medium mb-2">Credentials</p>
