@@ -3,17 +3,6 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type ThingDocument = HydratedDocument<Thing>;
 
-export enum ThingType {
-  CAMERA = 'camera',
-  SWITCH = 'switch',
-  SENSOR = 'sensor',
-  NVR = 'nvr',
-  VM = 'vm',
-  SERVICE = 'service',
-  PLC = 'plc',
-  OTHER = 'other',
-}
-
 export enum ThingStatus {
   ONLINE = 'online',
   OFFLINE = 'offline',
@@ -96,8 +85,8 @@ export class Thing {
   @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ enum: ThingType, default: ThingType.OTHER })
-  type: ThingType;
+  @Prop({ default: 'other' })
+  type: string;
 
   @Prop({ trim: true })
   macAddress: string;
@@ -107,6 +96,15 @@ export class Thing {
 
   @Prop({ default: '' })
   hostname: string;
+
+  @Prop({ default: '' })
+  vendor: string;
+
+  @Prop({ default: '' })
+  os: string;
+
+  @Prop({ default: '' })
+  description: string;
 
   @Prop({ enum: ThingStatus, default: ThingStatus.UNKNOWN, index: true })
   status: ThingStatus;

@@ -1,10 +1,10 @@
 import {
-  IsString, IsOptional, IsEnum, IsArray, IsNumber, IsObject,
+  IsString, IsOptional, IsArray, IsNumber, IsObject, IsEnum,
   MinLength, MaxLength, ValidateNested, Min, Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ThingType, ChannelDirection, ChannelType } from '../schemas/thing.schema';
+import { ChannelDirection, ChannelType } from '../schemas/thing.schema';
 
 class PortDto {
   @ApiProperty() @IsNumber() @Min(1) @Max(65535) port: number;
@@ -39,9 +39,9 @@ export class CreateThingDto {
   @IsString() @MinLength(1) @MaxLength(100)
   name: string;
 
-  @ApiPropertyOptional({ enum: ThingType, default: ThingType.OTHER })
-  @IsOptional() @IsEnum(ThingType)
-  type?: ThingType;
+  @ApiPropertyOptional({ example: 'camera' })
+  @IsOptional() @IsString()
+  type?: string;
 
   @ApiPropertyOptional({ example: 'AA:BB:CC:DD:EE:FF' })
   @IsOptional() @IsString()
@@ -54,6 +54,18 @@ export class CreateThingDto {
   @ApiPropertyOptional()
   @IsOptional() @IsString()
   hostname?: string;
+
+  @ApiPropertyOptional({ example: 'Hikvision' })
+  @IsOptional() @IsString()
+  vendor?: string;
+
+  @ApiPropertyOptional({ example: 'Linux 5.4' })
+  @IsOptional() @IsString()
+  os?: string;
+
+  @ApiPropertyOptional({ example: 'Front door IP camera' })
+  @IsOptional() @IsString() @MaxLength(500)
+  description?: string;
 
   @ApiPropertyOptional({ type: [PortDto] })
   @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => PortDto)

@@ -98,16 +98,20 @@ export class ScannerProcessor implements OnModuleInit, OnModuleDestroy {
             status: ThingStatus.ONLINE,
             lastSeenAt: new Date(),
             ports: host.ports || [],
+            ...(host.vendor && !existing.vendor ? { vendor: host.vendor } : {}),
+            ...(host.os && !existing.os ? { os: host.os } : {}),
           } as any);
           processedHosts.push({ ...host, isNew: false });
         } else if (host.macAddress || host.ipAddress) {
           await this.thingsRepository.create({
             networkId,
             name: host.hostname || host.ipAddress,
-            type: 'other' as any,
+            type: 'other',
             macAddress: host.macAddress || undefined,
             ipAddress: host.ipAddress,
             hostname: host.hostname || '',
+            vendor: host.vendor || '',
+            os: host.os || '',
             status: ThingStatus.DISCOVERED,
             lastSeenAt: new Date(),
             ports: host.ports || [],

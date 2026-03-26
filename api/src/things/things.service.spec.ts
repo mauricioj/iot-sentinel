@@ -5,7 +5,6 @@ import { ThingsRepository } from './things.repository';
 import { NetworksService } from '../networks/networks.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { NotFoundException } from '@nestjs/common';
-import { ThingType } from './schemas/thing.schema';
 
 const mockRepository = {
   create: jest.fn(),
@@ -51,7 +50,7 @@ describe('ThingsService', () => {
       const result = await service.create({
         networkId: 'net1',
         name: 'Camera',
-        type: ThingType.CAMERA,
+        type: 'camera',
         credentials: { username: 'admin', password: 'pass' },
       });
 
