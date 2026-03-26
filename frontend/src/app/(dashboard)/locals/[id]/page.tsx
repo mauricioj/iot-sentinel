@@ -38,6 +38,11 @@ export default function LocalDetailPage() {
   const [deleteNetworkTarget, setDeleteNetworkTarget] = useState<NetworkType | null>(null);
   const [deletingNetwork, setDeletingNetwork] = useState(false);
 
+  const [editNetworkOpen, setEditNetworkOpen] = useState(false);
+  const [editingNetwork, setEditingNetwork] = useState<NetworkType | null>(null);
+  const [savingEditNetwork, setSavingEditNetwork] = useState(false);
+  const [editNetworkForm, setEditNetworkForm] = useState({ name: '', cidr: '', gateway: '', vlanId: '', description: '' });
+
   const fetchLocal = async () => {
     setLoadingLocal(true);
     try {
@@ -115,6 +120,40 @@ export default function LocalDetailPage() {
     }
   };
 
+  const openEditNetwork = (n: NetworkType) => {
+    setEditingNetwork(n);
+    setEditNetworkForm({
+      name: n.name,
+      cidr: n.cidr,
+      gateway: n.gateway || '',
+      vlanId: n.vlanId != null ? String(n.vlanId) : '',
+      description: n.description || '',
+    });
+    setEditNetworkOpen(true);
+  };
+
+  const handleEditNetwork = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNetwork) return;
+    setSavingEditNetwork(true);
+    try {
+      await networksService.update(editingNetwork._id, {
+        name: editNetworkForm.name,
+        cidr: editNetworkForm.cidr,
+        gateway: editNetworkForm.gateway,
+        vlanId: editNetworkForm.vlanId ? Number(editNetworkForm.vlanId) : null,
+        description: editNetworkForm.description,
+      });
+      setEditNetworkOpen(false);
+      setEditingNetwork(null);
+      await fetchNetworks();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingEditNetwork(false);
+    }
+  };
+
   const handleDeleteNetwork = async () => {
     if (!deleteNetworkTarget) return;
     setDeletingNetwork(true);
@@ -138,15 +177,24 @@ export default function LocalDetailPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-12',
+      className: 'w-20',
       render: (n: NetworkType) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setDeleteNetworkTarget(n); }}
-          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label="Delete network"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <span className="flex items-center gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); openEditNetwork(n); }}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Edit network"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleteNetworkTarget(n); }}
+            className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Delete network"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </span>
       ),
     },
   ];
@@ -315,6 +363,56 @@ export default function LocalDetailPage() {
             </Button>
             <Button type="submit" disabled={savingNetwork}>
               {savingNetwork ? 'Adding...' : 'Add Network'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Network Modal */}
+      <Modal open={editNetworkOpen} onClose={() => setEditNetworkOpen(false)} title="Edit Network">
+        <form onSubmit={handleEditNetwork} className="space-y-4">
+          <Input
+            id="edit-net-name"
+            label="Name"
+            value={editNetworkForm.name}
+            onChange={(e) => setEditNetworkForm({ ...editNetworkForm, name: e.target.value })}
+            required
+          />
+          <Input
+            id="edit-net-cidr"
+            label="CIDR"
+            placeholder="192.168.1.0/24"
+            value={editNetworkForm.cidr}
+            onChange={(e) => setEditNetworkForm({ ...editNetworkForm, cidr: e.target.value })}
+            required
+          />
+          <Input
+            id="edit-net-gateway"
+            label="Gateway"
+            placeholder="192.168.1.1"
+            value={editNetworkForm.gateway}
+            onChange={(e) => setEditNetworkForm({ ...editNetworkForm, gateway: e.target.value })}
+          />
+          <Input
+            id="edit-net-vlan"
+            label="VLAN ID"
+            placeholder="10"
+            type="number"
+            value={editNetworkForm.vlanId}
+            onChange={(e) => setEditNetworkForm({ ...editNetworkForm, vlanId: e.target.value })}
+          />
+          <Input
+            id="edit-net-description"
+            label="Description"
+            value={editNetworkForm.description}
+            onChange={(e) => setEditNetworkForm({ ...editNetworkForm, description: e.target.value })}
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setEditNetworkOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={savingEditNetwork}>
+              {savingEditNetwork ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>
