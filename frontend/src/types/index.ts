@@ -66,7 +66,8 @@ export interface Thing {
   vendor: string;
   os: string;
   description: string;
-  status: 'online' | 'offline' | 'unknown' | 'discovered';
+  registrationStatus: 'discovered' | 'registered';
+  healthStatus: 'online' | 'offline' | 'unknown';
   lastSeenAt: string;
   ports: { port: number; protocol: string; service: string; version: string }[];
   channels: { number: number; direction: string; name: string; type: string; description: string }[];
@@ -107,12 +108,32 @@ export interface ThingTypeItem {
 export interface DashboardStats {
   things: {
     total: number;
+    registered: number;
+    discovered: number;
     online: number;
     offline: number;
     unknown: number;
-    discovered: number;
   };
-  locals: {
-    total: number;
+  locals: { total: number };
+}
+
+export interface StatusEvent {
+  _id: string;
+  thingId: string;
+  healthStatus: 'online' | 'offline';
+  timestamp: string;
+}
+
+export interface ThingHistory {
+  events: StatusEvent[];
+  uptime: {
+    uptimePercent: number;
+    totalOnline: number;
+    totalOffline: number;
   };
+}
+
+export interface UptimeStats {
+  averageUptimePercent: number;
+  thingCount: number;
 }

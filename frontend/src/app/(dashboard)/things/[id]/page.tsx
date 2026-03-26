@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CredentialsReveal } from '@/components/things/credentials-reveal';
+import { StatusHistoryCard } from '@/components/things/status-history-card';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { useThingTypes } from '@/contexts/thing-types-context';
 import { scannerService } from '@/services/scanner.service';
@@ -39,6 +40,8 @@ export default function ThingDetailPage() {
     vendor: '', os: '', description: '',
     credentials: { username: '', password: '', notes: '' },
   });
+
+  const [editTab, setEditTab] = useState<'general' | 'connectivity' | 'credentials'>('general');
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -201,7 +204,7 @@ export default function ThingDetailPage() {
             {scanning ? 'Scanning...' : <><Search className="h-4 w-4 mr-1" /> Deep Scan</>}
           </Button>
         )}
-        <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+        <Button variant="secondary" size="sm" onClick={() => { setEditTab('general'); setEditOpen(true); }}>
           <Pencil className="h-4 w-4 mr-1" />
           Edit
         </Button>
@@ -226,8 +229,14 @@ export default function ThingDetailPage() {
             <p className="font-medium mt-1">{thing.type || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Status</p>
-            <div className="mt-1"><StatusBadge status={thing.status} /></div>
+            <p className="text-muted-foreground">Registration</p>
+            <p className="font-medium mt-1 capitalize">{thing.registrationStatus || '-'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Health</p>
+            <div className="mt-1">
+              <StatusBadge registrationStatus={thing.registrationStatus} healthStatus={thing.healthStatus} />
+            </div>
           </div>
           <div>
             <p className="text-muted-foreground">IP Address</p>
@@ -263,6 +272,11 @@ export default function ThingDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Status History */}
+      {(thing as any).registrationStatus === 'registered' && (
+        <StatusHistoryCard thingId={id} />
+      )}
 
       {/* Groups Section */}
       <Card>
@@ -459,63 +473,78 @@ export default function ThingDetailPage() {
       {/* Edit Modal */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Thing">
         <form onSubmit={handleEdit} className="space-y-4">
-          <Input
-            id="edit-name"
-            label="Name"
-            value={editForm.name}
-            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-            required
-          />
-          <Select
-            id="edit-type"
-            label="Type"
-            options={typeOptions}
-            value={editForm.type}
-            onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
-          />
-          <Select
-            id="edit-network"
-            label="Network"
-            options={networkOptions}
-            value={editForm.networkId}
-            onChange={(e) => setEditForm({ ...editForm, networkId: e.target.value })}
-          />
-          <Input
-            id="edit-mac"
-            label="MAC Address"
-            value={editForm.macAddress}
-            onChange={(e) => setEditForm({ ...editForm, macAddress: e.target.value })}
-          />
-          <Input
-            id="edit-ip"
-            label="IP Address"
-            value={editForm.ipAddress}
-            onChange={(e) => setEditForm({ ...editForm, ipAddress: e.target.value })}
-          />
-          <Input
-            id="edit-vendor"
-            label="Vendor"
-            placeholder="e.g., Hikvision"
-            value={editForm.vendor}
-            onChange={(e) => setEditForm({ ...editForm, vendor: e.target.value })}
-          />
-          <Input
-            id="edit-os"
-            label="OS"
-            placeholder="e.g., Linux 5.4"
-            value={editForm.os}
-            onChange={(e) => setEditForm({ ...editForm, os: e.target.value })}
-          />
-          <Input
-            id="edit-description"
-            label="Description"
-            placeholder="e.g., Front door IP camera"
-            value={editForm.description}
-            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-          />
-          <div className="border-t border-border pt-3">
-            <p className="text-sm font-medium mb-2">Credentials</p>
-            <div className="space-y-2">
+          <div className="flex gap-1 border-b border-border mb-4">
+            {(['general', 'connectivity', 'credentials'] as const).map((tab) => (
+              <button key={tab} type="button" onClick={() => setEditTab(tab)}
+                className={`px-3 py-1.5 text-sm font-medium border-b-2 -mb-px transition-colors capitalize ${
+                  editTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}>{tab}</button>
+            ))}
+          </div>
+          {editTab === 'general' && (
+            <div className="space-y-4">
+              <Input
+                id="edit-name"
+                label="Name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+              />
+              <Select
+                id="edit-type"
+                label="Type"
+                options={typeOptions}
+                value={editForm.type}
+                onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+              />
+              <Input
+                id="edit-vendor"
+                label="Vendor"
+                placeholder="e.g., Hikvision"
+                value={editForm.vendor}
+                onChange={(e) => setEditForm({ ...editForm, vendor: e.target.value })}
+              />
+              <Input
+                id="edit-description"
+                label="Description"
+                placeholder="e.g., Front door IP camera"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </div>
+          )}
+          {editTab === 'connectivity' && (
+            <div className="space-y-4">
+              <Select
+                id="edit-network"
+                label="Network"
+                options={networkOptions}
+                value={editForm.networkId}
+                onChange={(e) => setEditForm({ ...editForm, networkId: e.target.value })}
+              />
+              <Input
+                id="edit-mac"
+                label="MAC Address"
+                value={editForm.macAddress}
+                onChange={(e) => setEditForm({ ...editForm, macAddress: e.target.value })}
+              />
+              <Input
+                id="edit-ip"
+                label="IP Address"
+                value={editForm.ipAddress}
+                onChange={(e) => setEditForm({ ...editForm, ipAddress: e.target.value })}
+              />
+              <Input
+                id="edit-os"
+                label="OS"
+                placeholder="e.g., Linux 5.4"
+                value={editForm.os}
+                onChange={(e) => setEditForm({ ...editForm, os: e.target.value })}
+              />
+            </div>
+          )}
+          {editTab === 'credentials' && (
+            <div className="space-y-4">
               <Input
                 id="edit-username"
                 label="Username"
@@ -536,7 +565,7 @@ export default function ThingDetailPage() {
                 onChange={(e) => setEditForm({ ...editForm, credentials: { ...editForm.credentials, notes: e.target.value } })}
               />
             </div>
-          </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
               Cancel
