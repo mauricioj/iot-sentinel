@@ -11,6 +11,7 @@ import { SettingsModule } from './settings/settings.module';
 import { LocalsModule } from './locals/locals.module';
 import { NetworksModule } from './networks/networks.module';
 import { GroupsModule } from './groups/groups.module';
+import { ThingTypesModule } from './thing-types/thing-types.module';
 import { ThingsModule } from './things/things.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ScannerModule } from './scanner/scanner.module';
@@ -44,6 +45,7 @@ import { BackupModule } from './backup/backup.module';
     LocalsModule,
     NetworksModule,
     GroupsModule,
+    ThingTypesModule,
     ThingsModule,
     DashboardModule,
     ScannerModule,
