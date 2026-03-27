@@ -80,7 +80,7 @@ export function CredentialsReveal({ thingId }: CredentialsRevealProps) {
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t('password')}</span>
             <div className="flex items-center gap-1">
-              <span className="font-mono">{credentials.password || '-'}</span>
+              <span className="font-mono">{credentials.password ? '••••••••' : '-'}</span>
               {credentials.password && (
                 <CopyButton text={credentials.password} field="password" label={t('copyPassword')} />
               )}
