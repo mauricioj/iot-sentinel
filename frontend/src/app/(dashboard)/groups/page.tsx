@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Layers, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,8 @@ import { Group } from '@/types';
 
 export default function GroupsPage() {
   const router = useRouter();
+  const t = useTranslations('Groups');
+  const tc = useTranslations('Common');
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,10 +73,10 @@ export default function GroupsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Groups</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <Button onClick={() => setModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Group
+          {t('newGroup')}
         </Button>
       </div>
 
@@ -84,12 +87,12 @@ export default function GroupsPage() {
       ) : groups.length === 0 ? (
         <EmptyState
           icon={Layers}
-          title="No groups yet"
-          description="Create groups to organize your IoT devices by category or location."
+          title={t('emptyTitle')}
+          description={t('emptyDesc')}
           action={
             <Button onClick={() => setModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              New Group
+              {t('newGroup')}
             </Button>
           }
         />
@@ -106,7 +109,7 @@ export default function GroupsPage() {
                 <button
                   onClick={(e) => { e.stopPropagation(); setDeleteTarget(group); }}
                   className="absolute top-3 right-3 p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                  aria-label="Delete group"
+                  aria-label={t('deleteGroupLabel')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -127,12 +130,12 @@ export default function GroupsPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Group">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newGroup')}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="group-name"
-            label="Name"
-            placeholder="Cameras"
+            label={tc('name')}
+            placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
@@ -142,7 +145,7 @@ export default function GroupsPage() {
             onChange={(icon) => setForm({ ...form, icon })}
           />
           <div className="space-y-1">
-            <label htmlFor="group-color" className="text-sm font-medium text-foreground">Color</label>
+            <label htmlFor="group-color" className="text-sm font-medium text-foreground">{t('color')}</label>
             <div className="flex items-center gap-3">
               <input
                 id="group-color"
@@ -152,7 +155,7 @@ export default function GroupsPage() {
                 className="h-10 w-14 rounded border border-border bg-input cursor-pointer"
               />
               <Input
-                placeholder="#6366f1"
+                placeholder={t('colorPlaceholder')}
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
                 className="flex-1"
@@ -161,17 +164,17 @@ export default function GroupsPage() {
           </div>
           <Input
             id="group-description"
-            label="Description"
-            placeholder="Optional description"
+            label={tc('description')}
+            placeholder={t('descPlaceholder')}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Creating...' : 'Create'}
+              {saving ? tc('creating') : tc('create')}
             </Button>
           </div>
         </form>
@@ -181,8 +184,8 @@ export default function GroupsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Group"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        title={t('deleteGroup')}
+        message={t('deleteGroupConfirm', { name: deleteTarget?.name ?? '' })}
         loading={deleting}
       />
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, Trash2, Plus, X, ChevronDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,10 @@ export default function ThingDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { thingTypes, getBySlug } = useThingTypes();
+  const t = useTranslations('ThingDetail');
+  const tc = useTranslations('Common');
+  const tThings = useTranslations('Things');
+  const tSettings = useTranslations('Settings');
 
   const [thing, setThing] = useState<Thing | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -158,7 +163,7 @@ export default function ThingDetailPage() {
     }
   };
 
-  const typeOptions = thingTypes.map((t) => ({ value: t.slug, label: t.name }));
+  const typeOptions = thingTypes.map((tt) => ({ value: tt.slug, label: tt.name }));
   const networkOptions = networks.map((n) => ({ value: n._id, label: n.name }));
 
   if (loading) {
@@ -170,7 +175,7 @@ export default function ThingDetailPage() {
   }
 
   if (!thing) {
-    return <div className="text-center py-12 text-muted-foreground">Thing not found.</div>;
+    return <div className="text-center py-12 text-muted-foreground">{t('notFound')}</div>;
   }
 
   const thingTypeData = thing ? getBySlug(thing.type) : undefined;
@@ -196,77 +201,77 @@ export default function ThingDetailPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push('/things')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {tc('back')}
         </Button>
         <h1 className="text-2xl font-bold flex-1">{thing.name}</h1>
         {thingTypeData?.capabilities.enablePortScan && (
           <Button variant="secondary" size="sm" onClick={handleDeepScan} disabled={scanning}>
-            {scanning ? 'Scanning...' : <><Search className="h-4 w-4 mr-1" /> Deep Scan</>}
+            {scanning ? t('scanning') : <><Search className="h-4 w-4 mr-1" /> {t('deepScan')}</>}
           </Button>
         )}
         <Button variant="secondary" size="sm" onClick={() => { setEditTab('general'); setEditOpen(true); }}>
           <Pencil className="h-4 w-4 mr-1" />
-          Edit
+          {tc('edit')}
         </Button>
         <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="h-4 w-4 mr-1" />
-          Delete
+          {tc('delete')}
         </Button>
       </div>
 
       {/* Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Device Info</CardTitle>
+          <CardTitle>{t('deviceInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Name</p>
+            <p className="text-muted-foreground">{tc('name')}</p>
             <p className="font-medium mt-1">{thing.name}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Type</p>
+            <p className="text-muted-foreground">{tc('type')}</p>
             <p className="font-medium mt-1">{thing.type || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Registration</p>
+            <p className="text-muted-foreground">{t('registration')}</p>
             <p className="font-medium mt-1 capitalize">{thing.registrationStatus || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Health</p>
+            <p className="text-muted-foreground">{t('health')}</p>
             <div className="mt-1">
               <StatusBadge registrationStatus={thing.registrationStatus} healthStatus={thing.healthStatus} />
             </div>
           </div>
           <div>
-            <p className="text-muted-foreground">IP Address</p>
+            <p className="text-muted-foreground">{t('ipAddress')}</p>
             <p className="font-medium mt-1 font-mono">{thing.ipAddress || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">MAC Address</p>
+            <p className="text-muted-foreground">{t('macAddress')}</p>
             <p className="font-medium mt-1 font-mono">{thing.macAddress || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Hostname</p>
+            <p className="text-muted-foreground">{t('hostname')}</p>
             <p className="font-medium mt-1">{thing.hostname || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Vendor</p>
+            <p className="text-muted-foreground">{t('vendor')}</p>
             <p className="font-medium mt-1">{thing.vendor || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">OS</p>
+            <p className="text-muted-foreground">{t('os')}</p>
             <p className="font-medium mt-1">{thing.os || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Last Seen</p>
+            <p className="text-muted-foreground">{t('lastSeen')}</p>
             <p className="font-medium mt-1">
               {thing.lastSeenAt ? new Date(thing.lastSeenAt).toLocaleString() : '-'}
             </p>
           </div>
           {thing.description && (
             <div className="col-span-full border-t border-border pt-3 mt-2">
-              <p className="text-muted-foreground">Description</p>
+              <p className="text-muted-foreground">{tc('description')}</p>
               <p className="font-medium mt-1">{thing.description}</p>
             </div>
           )}
@@ -282,12 +287,12 @@ export default function ThingDetailPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Groups</CardTitle>
+            <CardTitle>{t('groups')}</CardTitle>
             {availableGroups.length > 0 && (
               <div className="relative">
                 <Button size="sm" variant="secondary" onClick={() => setAddGroupOpen(!addGroupOpen)}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add to Group
+                  {t('addToGroup')}
                   <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
                 {addGroupOpen && (
@@ -315,7 +320,7 @@ export default function ThingDetailPage() {
         <CardContent>
           {assignedGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              Not assigned to any group yet.
+              {t('noGroups')}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -349,7 +354,7 @@ export default function ThingDetailPage() {
       {thingTypeData?.capabilities.enableChannels !== false && <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Channels</CardTitle>
+            <CardTitle>{t('channels')}</CardTitle>
             <Button size="sm" onClick={() => {
               setChannelForm({
                 number: (thing.channels?.length || 0) + 1,
@@ -358,25 +363,25 @@ export default function ThingDetailPage() {
               setChannelModalOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Channel
+              {t('addChannel')}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {(!thing.channels || thing.channels.length === 0) ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No channels configured. Add channels for multi-output devices like PLCs.
+              {t('noChannels')}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">#</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Direction</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Description</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('channelNumber')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('direction')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{tc('name')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('channelType')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{tc('description')}</th>
                     <th className="px-4 py-3 w-12"></th>
                   </tr>
                 </thead>
@@ -400,7 +405,7 @@ export default function ThingDetailPage() {
                         <button
                           onClick={() => handleRemoveChannel(i)}
                           className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Remove channel"
+                          title={t('removeChannel')}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -418,17 +423,17 @@ export default function ThingDetailPage() {
       {thing.ports && thing.ports.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Open Ports</CardTitle>
+            <CardTitle>{t('openPorts')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Port</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Protocol</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Service</th>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Version</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('port')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('protocol')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('service')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">{t('version')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -460,7 +465,7 @@ export default function ThingDetailPage() {
       {thing.metadata && Object.keys(thing.metadata).length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Metadata</CardTitle>
+            <CardTitle>{t('metadata')}</CardTitle>
           </CardHeader>
           <CardContent>
             <pre className="text-xs bg-muted/30 rounded p-3 overflow-x-auto">
@@ -471,43 +476,46 @@ export default function ThingDetailPage() {
       )}
 
       {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Thing">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editThing')}>
         <form onSubmit={handleEdit} className="space-y-4">
           <div className="flex gap-1 border-b border-border mb-4">
-            {(['general', 'connectivity', 'credentials'] as const).map((tab) => (
+            {(['general', 'connectivity', 'credentials'] as const).map((tab) => {
+              const tabLabel = tab === 'general' ? t('tabGeneral') : tab === 'connectivity' ? t('tabConnectivity') : t('tabCredentials');
+              return (
               <button key={tab} type="button" onClick={() => setEditTab(tab)}
                 className={`px-3 py-1.5 text-sm font-medium border-b-2 -mb-px transition-colors capitalize ${
                   editTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}>{tab}</button>
-            ))}
+                }`}>{tabLabel}</button>
+              );
+            })}
           </div>
           {editTab === 'general' && (
             <div className="space-y-4">
               <Input
                 id="edit-name"
-                label="Name"
+                label={tc('name')}
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 required
               />
               <Select
                 id="edit-type"
-                label="Type"
+                label={tc('type')}
                 options={typeOptions}
                 value={editForm.type}
                 onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
               />
               <Input
                 id="edit-vendor"
-                label="Vendor"
-                placeholder="e.g., Hikvision"
+                label={t('vendor')}
+                placeholder={t('vendorPlaceholder')}
                 value={editForm.vendor}
                 onChange={(e) => setEditForm({ ...editForm, vendor: e.target.value })}
               />
               <Input
                 id="edit-description"
-                label="Description"
-                placeholder="e.g., Front door IP camera"
+                label={tc('description')}
+                placeholder={t('descPlaceholder')}
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               />
@@ -517,27 +525,27 @@ export default function ThingDetailPage() {
             <div className="space-y-4">
               <Select
                 id="edit-network"
-                label="Network"
+                label={tThings('network')}
                 options={networkOptions}
                 value={editForm.networkId}
                 onChange={(e) => setEditForm({ ...editForm, networkId: e.target.value })}
               />
               <Input
                 id="edit-mac"
-                label="MAC Address"
+                label={t('macAddress')}
                 value={editForm.macAddress}
                 onChange={(e) => setEditForm({ ...editForm, macAddress: e.target.value })}
               />
               <Input
                 id="edit-ip"
-                label="IP Address"
+                label={t('ipAddress')}
                 value={editForm.ipAddress}
                 onChange={(e) => setEditForm({ ...editForm, ipAddress: e.target.value })}
               />
               <Input
                 id="edit-os"
-                label="OS"
-                placeholder="e.g., Linux 5.4"
+                label={t('os')}
+                placeholder={t('osPlaceholder')}
                 value={editForm.os}
                 onChange={(e) => setEditForm({ ...editForm, os: e.target.value })}
               />
@@ -547,20 +555,20 @@ export default function ThingDetailPage() {
             <div className="space-y-4">
               <Input
                 id="edit-username"
-                label="Username"
+                label={tSettings('username')}
                 value={editForm.credentials.username}
                 onChange={(e) => setEditForm({ ...editForm, credentials: { ...editForm.credentials, username: e.target.value } })}
               />
               <Input
                 id="edit-password"
-                label="Password"
+                label={tSettings('password')}
                 type="password"
                 value={editForm.credentials.password}
                 onChange={(e) => setEditForm({ ...editForm, credentials: { ...editForm.credentials, password: e.target.value } })}
               />
               <Input
                 id="edit-notes"
-                label="Notes"
+                label={tc('notes')}
                 value={editForm.credentials.notes}
                 onChange={(e) => setEditForm({ ...editForm, credentials: { ...editForm.credentials, notes: e.target.value } })}
               />
@@ -568,10 +576,10 @@ export default function ThingDetailPage() {
           )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? tc('saving') : tc('save')}
             </Button>
           </div>
         </form>
@@ -581,18 +589,18 @@ export default function ThingDetailPage() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Thing"
-        message={`Are you sure you want to delete "${thing.name}"? This action cannot be undone.`}
+        title={t('deleteThing')}
+        message={t('deleteThingConfirm', { name: thing?.name ?? '' })}
         loading={deleting}
       />
 
       {/* Add Channel Modal */}
-      <Modal open={channelModalOpen} onClose={() => setChannelModalOpen(false)} title="Add Channel">
+      <Modal open={channelModalOpen} onClose={() => setChannelModalOpen(false)} title={t('addChannelTitle')}>
         <form onSubmit={handleAddChannel} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
               id="ch-number"
-              label="Channel #"
+              label={t('channelNumberLabel')}
               type="number"
               value={String(channelForm.number)}
               onChange={(e) => setChannelForm({ ...channelForm, number: Number(e.target.value) })}
@@ -600,11 +608,11 @@ export default function ThingDetailPage() {
             />
             <Select
               id="ch-direction"
-              label="Direction"
+              label={t('direction')}
               options={[
-                { value: 'input', label: 'Input' },
-                { value: 'output', label: 'Output' },
-                { value: 'bidirectional', label: 'Bidirectional' },
+                { value: 'input', label: t('directionInput') },
+                { value: 'output', label: t('directionOutput') },
+                { value: 'bidirectional', label: t('directionBidirectional') },
               ]}
               value={channelForm.direction}
               onChange={(e) => setChannelForm({ ...channelForm, direction: e.target.value })}
@@ -612,40 +620,40 @@ export default function ThingDetailPage() {
           </div>
           <Input
             id="ch-name"
-            label="Name"
-            placeholder="e.g., Lamp Hall, Motor Gate"
+            label={tc('name')}
+            placeholder={t('channelNamePlaceholder')}
             value={channelForm.name}
             onChange={(e) => setChannelForm({ ...channelForm, name: e.target.value })}
             required
           />
           <Select
             id="ch-type"
-            label="Type"
+            label={t('channelType')}
             options={[
-              { value: 'light', label: 'Light' },
-              { value: 'motor', label: 'Motor' },
-              { value: 'sensor', label: 'Sensor' },
-              { value: 'relay', label: 'Relay' },
-              { value: 'camera', label: 'Camera' },
-              { value: 'port', label: 'Port' },
-              { value: 'other', label: 'Other' },
+              { value: 'light', label: t('channelTypeLight') },
+              { value: 'motor', label: t('channelTypeMotor') },
+              { value: 'sensor', label: t('channelTypeSensor') },
+              { value: 'relay', label: t('channelTypeRelay') },
+              { value: 'camera', label: t('channelTypeCamera') },
+              { value: 'port', label: t('channelTypePort') },
+              { value: 'other', label: t('channelTypeOther') },
             ]}
             value={channelForm.type}
             onChange={(e) => setChannelForm({ ...channelForm, type: e.target.value })}
           />
           <Input
             id="ch-description"
-            label="Description (optional)"
-            placeholder="e.g., Controls the garage door"
+            label={t('channelDescLabel')}
+            placeholder={t('channelDescPlaceholder')}
             value={channelForm.description}
             onChange={(e) => setChannelForm({ ...channelForm, description: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setChannelModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={savingChannel}>
-              {savingChannel ? 'Adding...' : 'Add Channel'}
+              {savingChannel ? tc('adding') : t('addChannel')}
             </Button>
           </div>
         </form>

@@ -2,8 +2,18 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { authService } from '@/services/auth.service';
-import { setAccessToken } from '@/services/api';
+import { api, setAccessToken } from '@/services/api';
 import { User } from '@/types';
+
+function syncLocaleCookie() {
+  api<{ language?: string }>('/api/v1/settings')
+    .then((settings) => {
+      if (settings.language) {
+        document.cookie = `locale=${settings.language};path=/;max-age=31536000`;
+      }
+    })
+    .catch(() => {});
+}
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Decode JWT to get user info
         const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
         setUser({ _id: payload.sub, username: payload.username, role: payload.role, createdAt: '' });
+        syncLocaleCookie();
       } else {
         localStorage.removeItem('refreshToken');
       }
@@ -59,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await authService.login(username, password);
     const payload = JSON.parse(atob(data.accessToken.split('.')[1]));
     setUser({ _id: payload.sub, username: payload.username, role: payload.role, createdAt: '' });
+    syncLocaleCookie();
   };
 
   const logout = async () => {

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, Check } from 'lucide-react';
 import { notificationsService, NotificationItem } from '@/services/notifications.service';
 import { useWebSocket } from '@/hooks/use-websocket';
 
 export function NotificationsDropdown() {
+  const t = useTranslations('NotificationsDropdown');
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -61,16 +63,16 @@ export function NotificationsDropdown() {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-lg border border-border bg-card shadow-lg z-50">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <span className="text-sm font-medium">Notifications</span>
+            <span className="text-sm font-medium">{t('title')}</span>
             {unreadCount > 0 && (
               <button onClick={handleMarkAllRead} className="text-xs text-primary hover:underline flex items-center gap-1">
-                <Check className="h-3 w-3" /> Mark all read
+                <Check className="h-3 w-3" /> {t('markAllRead')}
               </button>
             )}
           </div>
           <div className="max-h-64 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">No notifications</p>
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t('noNotifications')}</p>
             ) : (
               notifications.map((n) => (
                 <div

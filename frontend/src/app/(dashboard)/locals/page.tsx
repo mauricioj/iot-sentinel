@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, MapPin, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ import { Local } from '@/types';
 
 export default function LocalsPage() {
   const router = useRouter();
+  const t = useTranslations('Locals');
+  const tc = useTranslations('Common');
   const [locals, setLocals] = useState<Local[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -72,9 +75,9 @@ export default function LocalsPage() {
   };
 
   const columns = [
-    { key: 'name', header: 'Name' },
-    { key: 'description', header: 'Description', render: (item: Local) => item.description || '-' },
-    { key: 'address', header: 'Address', render: (item: Local) => item.address || '-' },
+    { key: 'name', header: tc('name') },
+    { key: 'description', header: tc('description'), render: (item: Local) => item.description || '-' },
+    { key: 'address', header: t('address'), render: (item: Local) => item.address || '-' },
     {
       key: 'actions',
       header: '',
@@ -83,7 +86,7 @@ export default function LocalsPage() {
         <button
           onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
           className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label="Delete"
+          aria-label={tc('delete')}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -94,22 +97,22 @@ export default function LocalsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Locals</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <Button onClick={() => setModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          New Local
+          {t('newLocal')}
         </Button>
       </div>
 
       {!loading && locals.length === 0 ? (
         <EmptyState
           icon={MapPin}
-          title="No locals yet"
-          description="Create your first local to start organizing your network infrastructure."
+          title={t('emptyTitle')}
+          description={t('emptyDesc')}
           action={
             <Button onClick={() => setModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              New Local
+              {t('newLocal')}
             </Button>
           }
         />
@@ -124,14 +127,14 @@ export default function LocalsPage() {
           {(pagination.hasNext || pagination.hasPrev) && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Page {pagination.page} of {pagination.pages}
+                {tc('pageOf', { page: pagination.page, pages: pagination.pages })}
               </p>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" onClick={pagination.prev} disabled={!pagination.hasPrev}>
-                  Previous
+                  {tc('previous')}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={pagination.next} disabled={!pagination.hasNext}>
-                  Next
+                  {tc('next')}
                 </Button>
               </div>
             </div>
@@ -139,36 +142,36 @@ export default function LocalsPage() {
         </>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Local">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newLocal')}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="name"
-            label="Name"
-            placeholder="Main Office"
+            label={tc('name')}
+            placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
           <Input
             id="description"
-            label="Description"
-            placeholder="Optional description"
+            label={tc('description')}
+            placeholder={t('descPlaceholder')}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
           <Input
             id="address"
-            label="Address"
-            placeholder="123 Main St, City, Country"
+            label={t('address')}
+            placeholder={t('addressPlaceholder')}
             value={form.address}
             onChange={(e) => setForm({ ...form, address: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Creating...' : 'Create'}
+              {saving ? tc('creating') : tc('create')}
             </Button>
           </div>
         </form>
@@ -178,8 +181,8 @@ export default function LocalsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Local"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        title={t('deleteLocal')}
+        message={t('deleteLocalConfirm', { name: deleteTarget?.name ?? '' })}
         loading={deleting}
       />
     </div>

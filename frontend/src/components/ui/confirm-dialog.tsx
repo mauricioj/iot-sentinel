@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Modal } from './modal';
 import { Button } from './button';
 import { AlertTriangle } from 'lucide-react';
@@ -14,6 +15,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ open, onClose, onConfirm, title, message, loading }: ConfirmDialogProps) {
+  const t = useTranslations('ConfirmDialog');
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex items-start gap-3 mb-6">
@@ -21,9 +23,9 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message, loadin
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
       <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>{t('cancel')}</Button>
         <Button variant="destructive" onClick={onConfirm} disabled={loading}>
-          {loading ? 'Deleting...' : 'Delete'}
+          {loading ? t('deleting') : t('delete')}
         </Button>
       </div>
     </Modal>

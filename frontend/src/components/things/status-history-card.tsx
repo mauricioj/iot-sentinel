@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UptimeBar } from './uptime-bar';
@@ -8,9 +9,9 @@ import { statusHistoryService } from '@/services/status-history.service';
 import { ThingHistory } from '@/types';
 
 const RANGES = [
-  { value: '24h', label: '24h', ms: 24 * 60 * 60 * 1000 },
-  { value: '7d', label: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
-  { value: '30d', label: '30d', ms: 30 * 24 * 60 * 60 * 1000 },
+  { value: '24h', ms: 24 * 60 * 60 * 1000 },
+  { value: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
+  { value: '30d', ms: 30 * 24 * 60 * 60 * 1000 },
 ];
 
 function formatDuration(seconds: number): string {
@@ -21,6 +22,7 @@ function formatDuration(seconds: number): string {
 }
 
 export function StatusHistoryCard({ thingId }: { thingId: string }) {
+  const t = useTranslations('StatusHistory');
   const [range, setRange] = useState('24h');
   const [history, setHistory] = useState<ThingHistory | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export function StatusHistoryCard({ thingId }: { thingId: string }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Status History</CardTitle>
+          <CardTitle>{t('title')}</CardTitle>
           <div className="flex gap-1">
             {RANGES.map((r) => (
               <Button
@@ -61,7 +63,7 @@ export function StatusHistoryCard({ thingId }: { thingId: string }) {
                 size="sm"
                 onClick={() => setRange(r.value)}
               >
-                {r.label}
+                {t(r.value as '24h' | '7d' | '30d')}
               </Button>
             ))}
           </div>
@@ -79,10 +81,10 @@ export function StatusHistoryCard({ thingId }: { thingId: string }) {
                 {history.uptime.uptimePercent}%
               </span>
               <span className="text-sm text-muted-foreground">
-                uptime ({rangeConfig.label})
+                {t('uptime', { value: rangeConfig.value })}
               </span>
               <span className="text-xs text-muted-foreground ml-auto">
-                Online: {formatDuration(history.uptime.totalOnline)} · Offline: {formatDuration(history.uptime.totalOffline)}
+                {t('online')} {formatDuration(history.uptime.totalOnline)} · {t('offline')} {formatDuration(history.uptime.totalOffline)}
               </span>
             </div>
 
@@ -90,7 +92,7 @@ export function StatusHistoryCard({ thingId }: { thingId: string }) {
 
             {history.events.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm font-medium mb-2">Recent Events</p>
+                <p className="text-sm font-medium mb-2">{t('recentEvents')}</p>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                   {[...history.events].reverse().slice(0, 20).map((event, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm py-1">
@@ -107,7 +109,7 @@ export function StatusHistoryCard({ thingId }: { thingId: string }) {
 
             {history.events.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No status changes recorded in this period.
+                {t('noEvents')}
               </p>
             )}
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,13 +27,15 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
   scan_failed: 'bg-yellow-500/10 text-yellow-600',
 };
 
-const CONDITIONS = [
-  { value: 'status_change', label: 'Status change', targetTypes: ['thing', 'group'], needsThreshold: false },
-  { value: 'offline_duration', label: 'Offline duration', targetTypes: ['thing', 'group'], needsThreshold: true },
-  { value: 'new_discovery', label: 'New device discovered', targetTypes: ['network', 'local'], needsThreshold: false },
-];
-
 export default function NotificationsPage() {
+  const t = useTranslations('Notifications');
+  const tc = useTranslations('Common');
+
+  const CONDITIONS = [
+    { value: 'status_change', label: t('conditionStatusChange'), targetTypes: ['thing', 'group'], needsThreshold: false },
+    { value: 'offline_duration', label: t('conditionOfflineDuration'), targetTypes: ['thing', 'group'], needsThreshold: true },
+    { value: 'new_discovery', label: t('conditionNewDevice'), targetTypes: ['network', 'local'], needsThreshold: false },
+  ];
   const [activeTab, setActiveTab] = useState<'notifications' | 'rules'>('notifications');
 
   // Notifications state
@@ -243,17 +246,17 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const ruleColumns = [
-    { key: 'name', header: 'Name' },
-    { key: 'targetType', header: 'Target Type' },
-    { key: 'condition', header: 'Condition' },
+    { key: 'name', header: tc('name') },
+    { key: 'targetType', header: t('targetType') },
+    { key: 'condition', header: t('condition') },
     {
       key: 'threshold',
-      header: 'Threshold',
+      header: t('threshold'),
       render: (item: NotificationRule) => `${item.threshold}s`,
     },
     {
       key: 'enabled',
-      header: 'Enabled',
+      header: t('enabled'),
       render: (item: NotificationRule) => (
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -262,7 +265,7 @@ export default function NotificationsPage() {
               : 'bg-muted text-muted-foreground'
           }`}
         >
-          {item.enabled ? 'Yes' : 'No'}
+          {item.enabled ? tc('yes') : tc('no')}
         </span>
       ),
     },
@@ -275,14 +278,14 @@ export default function NotificationsPage() {
           <button
             onClick={(e) => { e.stopPropagation(); handleEditRule(item); }}
             className="p-1 text-muted-foreground hover:text-primary transition-colors"
-            aria-label="Edit rule"
+            aria-label={t('editRule')}
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
             className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-            aria-label="Delete rule"
+            aria-label={t('deleteRule')}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -294,7 +297,7 @@ export default function NotificationsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Notifications</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
       </div>
 
       {/* Tabs */}
@@ -307,7 +310,7 @@ export default function NotificationsPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Notifications
+          {t('tabNotifications')}
           {unreadCount > 0 && (
             <span className="ml-2 inline-flex items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-white">
               {unreadCount}
@@ -322,7 +325,7 @@ export default function NotificationsPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          Rules
+          {t('tabRules')}
         </button>
       </div>
 
@@ -333,7 +336,7 @@ export default function NotificationsPage() {
             <div className="flex justify-end mb-4">
               <Button variant="secondary" size="sm" onClick={handleMarkAllRead}>
                 <Check className="h-4 w-4 mr-2" />
-                Mark all as read
+                {t('markAllRead')}
               </Button>
             </div>
           )}
@@ -341,14 +344,14 @@ export default function NotificationsPage() {
           {!loadingNotifs && notifications.length === 0 ? (
             <EmptyState
               icon={Bell}
-              title="No notifications"
-              description="Notifications will appear here when rules are triggered."
+              title={t('emptyTitle')}
+              description={t('emptyDesc')}
             />
           ) : (
             <div className="space-y-2">
               {loadingNotifs ? (
                 <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-                  Loading...
+                  {tc('loading')}
                 </div>
               ) : (
                 notifications.map((n) => (
@@ -385,7 +388,7 @@ export default function NotificationsPage() {
               {(notifPagination.hasNext || notifPagination.hasPrev) && (
                 <div className="flex items-center justify-between pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Page {notifPagination.page} of {notifPagination.pages}
+                    {tc('pageOf', { page: notifPagination.page, pages: notifPagination.pages })}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -394,7 +397,7 @@ export default function NotificationsPage() {
                       onClick={notifPagination.prev}
                       disabled={!notifPagination.hasPrev}
                     >
-                      Previous
+                      {tc('previous')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -402,7 +405,7 @@ export default function NotificationsPage() {
                       onClick={notifPagination.next}
                       disabled={!notifPagination.hasNext}
                     >
-                      Next
+                      {tc('next')}
                     </Button>
                   </div>
                 </div>
@@ -418,19 +421,19 @@ export default function NotificationsPage() {
           <div className="flex justify-end mb-4">
             <Button onClick={handleOpenNewRule}>
               <Plus className="h-4 w-4 mr-2" />
-              New Rule
+              {t('newRule')}
             </Button>
           </div>
 
           {!loadingRules && rules.length === 0 ? (
             <EmptyState
               icon={Bell}
-              title="No rules yet"
-              description="Create notification rules to get alerted when things go offline or change status."
+              title={t('rulesEmptyTitle')}
+              description={t('rulesEmptyDesc')}
               action={
                 <Button onClick={handleOpenNewRule}>
                   <Plus className="h-4 w-4 mr-2" />
-                  New Rule
+                  {t('newRule')}
                 </Button>
               }
             />
@@ -440,7 +443,7 @@ export default function NotificationsPage() {
               {(rulesPagination.hasNext || rulesPagination.hasPrev) && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Page {rulesPagination.page} of {rulesPagination.pages}
+                    {tc('pageOf', { page: rulesPagination.page, pages: rulesPagination.pages })}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -449,7 +452,7 @@ export default function NotificationsPage() {
                       onClick={rulesPagination.prev}
                       disabled={!rulesPagination.hasPrev}
                     >
-                      Previous
+                      {tc('previous')}
                     </Button>
                     <Button
                       variant="secondary"
@@ -457,7 +460,7 @@ export default function NotificationsPage() {
                       onClick={rulesPagination.next}
                       disabled={!rulesPagination.hasNext}
                     >
-                      Next
+                      {tc('next')}
                     </Button>
                   </div>
                 </div>
@@ -468,12 +471,12 @@ export default function NotificationsPage() {
       )}
 
       {/* Create Rule Modal */}
-      <Modal open={ruleModalOpen} onClose={() => { setRuleModalOpen(false); setEditingRule(null); }} title={editingRule ? 'Edit Notification Rule' : 'New Notification Rule'}>
+      <Modal open={ruleModalOpen} onClose={() => { setRuleModalOpen(false); setEditingRule(null); }} title={editingRule ? t('editRuleTitle') : t('newRuleTitle')}>
         <form onSubmit={handleSaveRule} className="space-y-4">
           <Input
             id="rule-name"
-            label="Name"
-            placeholder="Cameras offline > 5min"
+            label={tc('name')}
+            placeholder={t('ruleNamePlaceholder')}
             value={ruleForm.name}
             onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })}
             required
@@ -481,7 +484,7 @@ export default function NotificationsPage() {
 
           <div className="space-y-1">
             <label className="text-sm font-medium text-foreground" htmlFor="condition">
-              Condition
+              {t('condition')}
             </label>
             <select
               id="condition"
@@ -497,10 +500,10 @@ export default function NotificationsPage() {
             </select>
             <p className="text-xs text-muted-foreground mt-1">
               {ruleForm.condition === 'new_discovery'
-                ? 'Notifies when a new device is found on a network scan. Target is optional (leave empty for all networks).'
+                ? t('helpNewDevice')
                 : ruleForm.condition === 'offline_duration'
-                ? 'Notifies when a thing is offline for longer than the threshold.'
-                : 'Notifies when a thing changes status (online/offline).'}
+                ? t('helpOfflineDuration')
+                : t('helpStatusChange')}
             </p>
           </div>
 
@@ -508,7 +511,7 @@ export default function NotificationsPage() {
             <>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-foreground" htmlFor="targetType">
-                  Target Type
+                  {t('targetType')}
                 </label>
                 <select
                   id="targetType"
@@ -526,7 +529,7 @@ export default function NotificationsPage() {
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-foreground" htmlFor="targetId">
-                  Target {ruleForm.condition === 'new_discovery' ? '(optional)' : ''}
+                  {t('target')} {ruleForm.condition === 'new_discovery' ? `(${tc('optional')})` : ''}
                 </label>
                 <select
                   id="targetId"
@@ -538,10 +541,10 @@ export default function NotificationsPage() {
                 >
                   <option value="">
                     {loadingTargets
-                      ? 'Loading...'
+                      ? t('targetLoading')
                       : ruleForm.condition === 'new_discovery'
-                      ? 'All (any network)'
-                      : `Select ${ruleForm.targetType}`}
+                      ? t('targetAll')
+                      : t('targetSelect', { type: ruleForm.targetType ?? '' })}
                   </option>
                   {targetOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -556,9 +559,9 @@ export default function NotificationsPage() {
           {needsThreshold && (
             <Input
               id="threshold"
-              label="Threshold (seconds)"
+              label={t('thresholdSeconds')}
               type="number"
-              placeholder="300"
+              placeholder={t('thresholdPlaceholder')}
               value={String(ruleForm.threshold)}
               onChange={(e) =>
                 setRuleForm({ ...ruleForm, threshold: parseInt(e.target.value, 10) || 0 })
@@ -567,7 +570,7 @@ export default function NotificationsPage() {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Channels</label>
+            <label className="text-sm font-medium text-foreground">{t('channelsLabel')}</label>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -580,16 +583,16 @@ export default function NotificationsPage() {
                 }}
                 className="rounded"
               />
-              In-App
+              {t('inApp')}
             </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => { setRuleModalOpen(false); setEditingRule(null); }}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={savingRule}>
-              {savingRule ? 'Saving...' : editingRule ? 'Save Changes' : 'Create'}
+              {savingRule ? tc('saving') : editingRule ? t('saveChanges') : tc('create')}
             </Button>
           </div>
         </form>
@@ -599,8 +602,8 @@ export default function NotificationsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteRule}
-        title="Delete Rule"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        title={t('deleteRuleTitle')}
+        message={t('deleteRuleConfirm', { name: deleteTarget?.name ?? '' })}
         loading={deleting}
       />
     </div>

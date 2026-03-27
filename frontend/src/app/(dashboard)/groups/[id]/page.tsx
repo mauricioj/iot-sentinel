@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Pencil, Trash2, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,8 @@ export default function GroupDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const t = useTranslations('GroupDetail');
+  const tc = useTranslations('Common');
 
   const [group, setGroup] = useState<Group | null>(null);
   const [things, setThings] = useState<Thing[]>([]);
@@ -89,14 +92,14 @@ export default function GroupDetailPage() {
   };
 
   const thingColumns = [
-    { key: 'name', header: 'Name' },
-    { key: 'type', header: 'Type', render: (t: Thing) => t.type || '-' },
-    { key: 'ipAddress', header: 'IP Address', render: (t: Thing) => t.ipAddress || '-' },
-    { key: 'macAddress', header: 'MAC Address', render: (t: Thing) => t.macAddress || '-' },
+    { key: 'name', header: tc('name') },
+    { key: 'type', header: tc('type'), render: (thing: Thing) => thing.type || '-' },
+    { key: 'ipAddress', header: t('ipAddress'), render: (thing: Thing) => thing.ipAddress || '-' },
+    { key: 'macAddress', header: t('macAddress'), render: (thing: Thing) => thing.macAddress || '-' },
     {
       key: 'status',
-      header: 'Status',
-      render: (t: Thing) => <StatusBadge registrationStatus={t.registrationStatus} healthStatus={t.healthStatus} />,
+      header: tc('status'),
+      render: (thing: Thing) => <StatusBadge registrationStatus={thing.registrationStatus} healthStatus={thing.healthStatus} />,
     },
   ];
 
@@ -109,7 +112,7 @@ export default function GroupDetailPage() {
   }
 
   if (!group) {
-    return <div className="text-center py-12 text-muted-foreground">Group not found.</div>;
+    return <div className="text-center py-12 text-muted-foreground">{t('notFound')}</div>;
   }
 
   const GroupIcon = getIconComponent(group.icon);
@@ -119,39 +122,39 @@ export default function GroupDetailPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push('/groups')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {tc('back')}
         </Button>
         <GroupIcon className="h-6 w-6" style={{ color: group.color || '#6366f1' }} />
         <h1 className="text-2xl font-bold flex-1">{group.name}</h1>
         <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="h-4 w-4 mr-1" />
-          Edit
+          {tc('edit')}
         </Button>
         <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
           <Trash2 className="h-4 w-4 mr-1" />
-          Delete
+          {tc('delete')}
         </Button>
       </div>
 
       {/* Group Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Group Info</CardTitle>
+          <CardTitle>{t('groupInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Name</p>
+            <p className="text-muted-foreground">{tc('name')}</p>
             <p className="font-medium mt-1">{group.name}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Icon</p>
+            <p className="text-muted-foreground">{t('icon')}</p>
             <div className="flex items-center gap-2 mt-1">
               <GroupIcon className="h-5 w-5" style={{ color: group.color || '#6366f1' }} />
               <span className="font-mono">{group.icon || '-'}</span>
             </div>
           </div>
           <div>
-            <p className="text-muted-foreground">Color</p>
+            <p className="text-muted-foreground">{t('color')}</p>
             <div className="flex items-center gap-2 mt-1">
               <span
                 className="h-4 w-4 rounded-full border border-border"
@@ -161,7 +164,7 @@ export default function GroupDetailPage() {
             </div>
           </div>
           <div>
-            <p className="text-muted-foreground">Description</p>
+            <p className="text-muted-foreground">{tc('description')}</p>
             <p className="font-medium mt-1">{group.description || '-'}</p>
           </div>
         </CardContent>
@@ -169,12 +172,12 @@ export default function GroupDetailPage() {
 
       {/* Things in Group */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Things in this Group</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('thingsInGroup')}</h2>
         {!loadingThings && things.length === 0 ? (
           <EmptyState
             icon={Box}
-            title="No things in this group"
-            description="Assign devices to this group from the Things page."
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
           />
         ) : (
           <DataTable
@@ -187,11 +190,11 @@ export default function GroupDetailPage() {
       </div>
 
       {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Group">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editGroup')}>
         <form onSubmit={handleEdit} className="space-y-4">
           <Input
             id="edit-group-name"
-            label="Name"
+            label={tc('name')}
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
             required
@@ -201,7 +204,7 @@ export default function GroupDetailPage() {
             onChange={(icon) => setEditForm({ ...editForm, icon })}
           />
           <div className="space-y-1">
-            <label htmlFor="edit-group-color" className="text-sm font-medium text-foreground">Color</label>
+            <label htmlFor="edit-group-color" className="text-sm font-medium text-foreground">{t('color')}</label>
             <div className="flex items-center gap-3">
               <input
                 id="edit-group-color"
@@ -220,16 +223,16 @@ export default function GroupDetailPage() {
           </div>
           <Input
             id="edit-group-description"
-            label="Description"
+            label={tc('description')}
             value={editForm.description}
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? tc('saving') : tc('save')}
             </Button>
           </div>
         </form>
@@ -239,8 +242,8 @@ export default function GroupDetailPage() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Group"
-        message={`Are you sure you want to delete "${group.name}"? This action cannot be undone.`}
+        title={t('deleteGroup')}
+        message={t('deleteGroupConfirm', { name: group?.name ?? '' })}
         loading={deleting}
       />
     </div>

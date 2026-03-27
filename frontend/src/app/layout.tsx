@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThingTypesProvider } from '@/contexts/thing-types-context';
@@ -8,13 +10,18 @@ export const metadata: Metadata = {
   description: 'IoT device management and network monitoring',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" className="dark">
+    <html lang={locale} className="dark">
       <body>
-        <AuthProvider>
-          <ThingTypesProvider>{children}</ThingTypesProvider>
-        </AuthProvider>
+        <NextIntlClientProvider messages={messages}>
+          <AuthProvider>
+            <ThingTypesProvider>{children}</ThingTypesProvider>
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

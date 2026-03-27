@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { MapPin, Router } from 'lucide-react';
 import {
   ReactFlow,
@@ -128,7 +129,7 @@ const LocalLabelNode = memo(function LocalLabelNode({ data }: NodeProps) {
         <MapPin className="h-5 w-5 text-primary" />
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Local</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{String(data.localLabel)}</p>
         <p className="text-sm font-bold text-foreground">{String(data.label)}</p>
       </div>
     </div>
@@ -154,12 +155,19 @@ interface ThingTypeInfo {
   color: string;
 }
 
+interface TranslatedLabels {
+  gateway: string;
+  na: string;
+  local: string;
+}
+
 function buildGraph(
   locals: Local[],
   networksByLocal: Record<string, NetworkType[]>,
   thingsByNetwork: Record<string, Thing[]>,
   groups: Group[],
   thingTypeMap: Record<string, ThingTypeInfo>,
+  labels: TranslatedLabels,
 ): GraphData {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -176,7 +184,7 @@ function buildGraph(
       id: `local-${local._id}`,
       type: 'localLabel',
       position: { x: localXOffset, y: -80 },
-      data: { label: local.name },
+      data: { label: local.name, localLabel: labels.local },
     });
 
     let networkYOffset = 0;
@@ -231,8 +239,8 @@ function buildGraph(
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
           data: {
-            label: 'Gateway',
-            ip: network.gateway || 'N/A',
+            label: labels.gateway,
+            ip: network.gateway || labels.na,
             isRealDevice: false,
           },
         });
@@ -304,6 +312,7 @@ function buildGraph(
 
 export default function MapPage() {
   const router = useRouter();
+  const t = useTranslations('Map');
   const { thingTypes } = useThingTypes();
   const [loading, setLoading] = useState(true);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
@@ -349,7 +358,11 @@ export default function MapPage() {
         thingTypeMap[tt.slug] = { icon: tt.icon, color: tt.color };
       }
 
-      setGraphData(buildGraph(locals, networksByLocal, thingsByNetwork, groups, thingTypeMap));
+      setGraphData(buildGraph(locals, networksByLocal, thingsByNetwork, groups, thingTypeMap, {
+        gateway: t('gateway'),
+        na: t('na'),
+        local: t('local'),
+      }));
     } catch (err) {
       console.error('Failed to fetch map data:', err);
     } finally {
@@ -376,7 +389,7 @@ export default function MapPage() {
       <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm">Loading network map...</p>
+          <p className="text-sm">{t('loading')}</p>
         </div>
       </div>
     );
@@ -385,11 +398,11 @@ export default function MapPage() {
   if (!hasLocals) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-6">Network Map</h1>
+        <h1 className="text-2xl font-bold mb-6">{t('title')}</h1>
         <EmptyState
           icon={MapPin}
-          title="No locals found"
-          description="Add a local and configure networks to visualize the topology."
+          title={t('emptyTitle')}
+          description={t('emptyDesc')}
         />
       </div>
     );
@@ -397,7 +410,7 @@ export default function MapPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Network Map</h1>
+      <h1 className="text-2xl font-bold mb-4">{t('title')}</h1>
       <div className="rounded-lg border border-border overflow-hidden h-[calc(100vh-10rem)]">
         <ReactFlow
           nodes={graphData.nodes}

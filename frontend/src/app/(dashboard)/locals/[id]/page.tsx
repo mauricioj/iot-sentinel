@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, Plus, Network, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ export default function LocalDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const t = useTranslations('LocalDetail');
+  const tc = useTranslations('Common');
 
   const [local, setLocal] = useState<Local | null>(null);
   const [networks, setNetworks] = useState<NetworkType[]>([]);
@@ -169,11 +172,11 @@ export default function LocalDetailPage() {
   };
 
   const networkColumns = [
-    { key: 'name', header: 'Name' },
-    { key: 'cidr', header: 'CIDR' },
-    { key: 'gateway', header: 'Gateway', render: (n: NetworkType) => n.gateway || '-' },
-    { key: 'vlanId', header: 'VLAN', render: (n: NetworkType) => n.vlanId ?? '-' },
-    { key: 'description', header: 'Description', render: (n: NetworkType) => n.description || '-' },
+    { key: 'name', header: tc('name') },
+    { key: 'cidr', header: t('cidr') },
+    { key: 'gateway', header: t('gateway'), render: (n: NetworkType) => n.gateway || '-' },
+    { key: 'vlanId', header: t('vlanId'), render: (n: NetworkType) => n.vlanId ?? '-' },
+    { key: 'description', header: tc('description'), render: (n: NetworkType) => n.description || '-' },
     {
       key: 'actions',
       header: '',
@@ -183,14 +186,14 @@ export default function LocalDetailPage() {
           <button
             onClick={(e) => { e.stopPropagation(); openEditNetwork(n); }}
             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Edit network"
+            aria-label={t('editNetworkLabel')}
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDeleteNetworkTarget(n); }}
             className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-            aria-label="Delete network"
+            aria-label={t('deleteNetworkLabel')}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -220,34 +223,34 @@ export default function LocalDetailPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push('/locals')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {tc('back')}
         </Button>
         <h1 className="text-2xl font-bold flex-1">{local.name}</h1>
         <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="h-4 w-4 mr-1" />
-          Edit
+          {tc('edit')}
         </Button>
         <Button variant="destructive" size="sm" onClick={() => setDeleteLocalOpen(true)}>
           <Trash2 className="h-4 w-4 mr-1" />
-          Delete
+          {tc('delete')}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Local Info</CardTitle>
+          <CardTitle>{t('localInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Name</p>
+            <p className="text-muted-foreground">{tc('name')}</p>
             <p className="font-medium mt-1">{local.name}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Description</p>
+            <p className="text-muted-foreground">{tc('description')}</p>
             <p className="font-medium mt-1">{local.description || '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Address</p>
+            <p className="text-muted-foreground">{t('address')}</p>
             <p className="font-medium mt-1">{local.address || '-'}</p>
           </div>
         </CardContent>
@@ -255,22 +258,22 @@ export default function LocalDetailPage() {
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Networks</h2>
+          <h2 className="text-lg font-semibold">{t('networks')}</h2>
           <Button size="sm" onClick={() => setAddNetworkOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Add Network
+            {t('addNetwork')}
           </Button>
         </div>
 
         {!loadingNetworks && networks.length === 0 ? (
           <EmptyState
             icon={Network}
-            title="No networks yet"
-            description="Add a network to this local to start scanning."
+            title={t('emptyNetworks')}
+            description={t('emptyNetworksDesc')}
             action={
               <Button size="sm" onClick={() => setAddNetworkOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />
-                Add Network
+                {t('addNetwork')}
               </Button>
             }
           />
@@ -284,135 +287,135 @@ export default function LocalDetailPage() {
       </div>
 
       {/* Edit Local Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Local">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editLocal')}>
         <form onSubmit={handleEdit} className="space-y-4">
           <Input
             id="edit-name"
-            label="Name"
+            label={tc('name')}
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
             required
           />
           <Input
             id="edit-description"
-            label="Description"
+            label={tc('description')}
             value={editForm.description}
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
           />
           <Input
             id="edit-address"
-            label="Address"
+            label={t('address')}
             value={editForm.address}
             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? tc('saving') : tc('save')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Add Network Modal */}
-      <Modal open={addNetworkOpen} onClose={() => setAddNetworkOpen(false)} title="Add Network">
+      <Modal open={addNetworkOpen} onClose={() => setAddNetworkOpen(false)} title={t('addNetwork')}>
         <form onSubmit={handleAddNetwork} className="space-y-4">
           <Input
             id="net-name"
-            label="Name"
-            placeholder="Office LAN"
+            label={tc('name')}
+            placeholder={t('networkNamePlaceholder')}
             value={networkForm.name}
             onChange={(e) => setNetworkForm({ ...networkForm, name: e.target.value })}
             required
           />
           <Input
             id="net-cidr"
-            label="CIDR"
-            placeholder="192.168.1.0/24"
+            label={t('cidr')}
+            placeholder={t('cidrPlaceholder')}
             value={networkForm.cidr}
             onChange={(e) => setNetworkForm({ ...networkForm, cidr: e.target.value })}
             required
           />
           <Input
             id="net-gateway"
-            label="Gateway"
-            placeholder="192.168.1.1"
+            label={t('gateway')}
+            placeholder={t('gatewayPlaceholder')}
             value={networkForm.gateway}
             onChange={(e) => setNetworkForm({ ...networkForm, gateway: e.target.value })}
           />
           <Input
             id="net-vlan"
-            label="VLAN ID"
-            placeholder="10"
+            label={t('vlanId')}
+            placeholder={t('vlanPlaceholder')}
             type="number"
             value={networkForm.vlanId}
             onChange={(e) => setNetworkForm({ ...networkForm, vlanId: e.target.value })}
           />
           <Input
             id="net-description"
-            label="Description"
-            placeholder="Optional description"
+            label={tc('description')}
+            placeholder={t('descPlaceholder')}
             value={networkForm.description}
             onChange={(e) => setNetworkForm({ ...networkForm, description: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setAddNetworkOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={savingNetwork}>
-              {savingNetwork ? 'Adding...' : 'Add Network'}
+              {savingNetwork ? tc('adding') : t('addNetwork')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Edit Network Modal */}
-      <Modal open={editNetworkOpen} onClose={() => setEditNetworkOpen(false)} title="Edit Network">
+      <Modal open={editNetworkOpen} onClose={() => setEditNetworkOpen(false)} title={t('editNetwork')}>
         <form onSubmit={handleEditNetwork} className="space-y-4">
           <Input
             id="edit-net-name"
-            label="Name"
+            label={tc('name')}
             value={editNetworkForm.name}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, name: e.target.value })}
             required
           />
           <Input
             id="edit-net-cidr"
-            label="CIDR"
-            placeholder="192.168.1.0/24"
+            label={t('cidr')}
+            placeholder={t('cidrPlaceholder')}
             value={editNetworkForm.cidr}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, cidr: e.target.value })}
             required
           />
           <Input
             id="edit-net-gateway"
-            label="Gateway"
-            placeholder="192.168.1.1"
+            label={t('gateway')}
+            placeholder={t('gatewayPlaceholder')}
             value={editNetworkForm.gateway}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, gateway: e.target.value })}
           />
           <Input
             id="edit-net-vlan"
-            label="VLAN ID"
-            placeholder="10"
+            label={t('vlanId')}
+            placeholder={t('vlanPlaceholder')}
             type="number"
             value={editNetworkForm.vlanId}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, vlanId: e.target.value })}
           />
           <Input
             id="edit-net-description"
-            label="Description"
+            label={tc('description')}
             value={editNetworkForm.description}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, description: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditNetworkOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={savingEditNetwork}>
-              {savingEditNetwork ? 'Saving...' : 'Save'}
+              {savingEditNetwork ? tc('saving') : tc('save')}
             </Button>
           </div>
         </form>
@@ -423,8 +426,8 @@ export default function LocalDetailPage() {
         open={deleteLocalOpen}
         onClose={() => setDeleteLocalOpen(false)}
         onConfirm={handleDeleteLocal}
-        title="Delete Local"
-        message={`Are you sure you want to delete "${local.name}"? All associated networks will also be removed.`}
+        title={t('deleteLocal')}
+        message={t('deleteLocalConfirm', { name: local?.name ?? '' })}
         loading={deletingLocal}
       />
 
@@ -433,8 +436,8 @@ export default function LocalDetailPage() {
         open={!!deleteNetworkTarget}
         onClose={() => setDeleteNetworkTarget(null)}
         onConfirm={handleDeleteNetwork}
-        title="Delete Network"
-        message={`Are you sure you want to delete network "${deleteNetworkTarget?.name}"?`}
+        title={t('deleteNetwork')}
+        message={t('deleteNetworkConfirm', { name: deleteNetworkTarget?.name ?? '' })}
         loading={deletingNetwork}
       />
     </div>

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Pencil, Settings as SettingsIcon, Users, Download, Upload, Cpu } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { Plus, Trash2, Pencil, Settings as SettingsIcon, Users, Download, Upload, Cpu, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -59,6 +61,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export default function SettingsPage() {
+  const t = useTranslations('Settings');
+  const tc = useTranslations('Common');
+  const router = useRouter();
+
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -84,6 +90,16 @@ export default function SettingsPage() {
   const [restorePassword, setRestorePassword] = useState('');
   const [restoring, setRestoring] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<'general' | 'thing-types' | 'users' | 'backup'>('general');
+
+  const tabs = [
+    { key: 'general' as const, label: t('tabGeneral'), icon: SettingsIcon },
+    { key: 'thing-types' as const, label: t('tabThingTypes'), icon: Cpu },
+    { key: 'users' as const, label: t('tabUsers'), icon: Users },
+    { key: 'backup' as const, label: t('tabBackup'), icon: Database },
+  ];
 
   // Thing Types state
   const { thingTypes, refresh: refreshTypes } = useThingTypes();
@@ -150,11 +166,13 @@ export default function SettingsPage() {
           },
         }),
       });
-      setSaveMessage({ type: 'success', text: 'Settings saved successfully.' });
+      document.cookie = `locale=${settings.language};path=/;max-age=31536000`;
+      router.refresh();
+      setSaveMessage({ type: 'success', text: t('settingsSaved') });
     } catch (err) {
       setSaveMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to save settings.',
+        text: err instanceof Error ? err.message : t('settingsSaveFailed'),
       });
     } finally {
       setSaving(false);
@@ -250,11 +268,11 @@ export default function SettingsPage() {
     setTypeModalOpen(true);
   };
 
-  const openEditTypeModal = (t: ThingTypeItem) => {
-    setEditingType(t);
+  const openEditTypeModal = (tt: ThingTypeItem) => {
+    setEditingType(tt);
     setTypeForm({
-      name: t.name, slug: t.slug, icon: t.icon, color: t.color,
-      capabilities: { ...t.capabilities },
+      name: tt.name, slug: tt.slug, icon: tt.icon, color: tt.color,
+      capabilities: { ...tt.capabilities },
     });
     setTypeModalOpen(true);
   };
@@ -301,7 +319,7 @@ export default function SettingsPage() {
   const typeColumns = [
     {
       key: 'icon',
-      header: 'Icon',
+      header: t('icon'),
       className: 'w-12',
       render: (item: ThingTypeItem) => {
         const Icon = getIconComponent(item.icon);
@@ -310,22 +328,22 @@ export default function SettingsPage() {
     },
     {
       key: 'name',
-      header: 'Name',
+      header: tc('name'),
       render: (item: ThingTypeItem) => (
         <span className="flex items-center gap-2">
           {item.name}
-          {item.isSystem && <Badge variant="secondary">system</Badge>}
+          {item.isSystem && <Badge variant="secondary">{t('system')}</Badge>}
         </span>
       ),
     },
     {
       key: 'capabilities',
-      header: 'Capabilities',
+      header: t('capabilities'),
       render: (item: ThingTypeItem) => (
         <span className="flex flex-wrap gap-1">
-          {item.capabilities.enableChannels && <Badge variant="secondary">Channels</Badge>}
-          {item.capabilities.enablePortScan && <Badge variant="secondary">Port Scan</Badge>}
-          {item.capabilities.enableCredentials && <Badge variant="secondary">Credentials</Badge>}
+          {item.capabilities.enableChannels && <Badge variant="secondary">{t('channels')}</Badge>}
+          {item.capabilities.enablePortScan && <Badge variant="secondary">{t('portScan')}</Badge>}
+          {item.capabilities.enableCredentials && <Badge variant="secondary">{t('credentials')}</Badge>}
         </span>
       ),
     },
@@ -338,16 +356,16 @@ export default function SettingsPage() {
           <button
             onClick={(e) => { e.stopPropagation(); openEditTypeModal(item); }}
             className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Edit type"
+            aria-label={t('editType')}
           >
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDeleteTypeTarget(item); }}
             className="p-1 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Delete type"
+            aria-label={t('deleteType')}
             disabled={item.isSystem}
-            title={item.isSystem ? 'System types cannot be deleted' : undefined}
+            title={item.isSystem ? t('systemNoDelete') : undefined}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -357,13 +375,13 @@ export default function SettingsPage() {
   ];
 
   const userColumns = [
-    { key: 'username', header: 'Username' },
+    { key: 'username', header: t('username') },
     {
       key: 'role',
-      header: 'Role',
+      header: t('role'),
       render: (item: User) => (
         <Badge variant={item.role === 'admin' ? 'default' : 'secondary'}>
-          {item.role.charAt(0).toUpperCase() + item.role.slice(1)}
+          {item.role === 'admin' ? t('admin') : t('viewer')}
         </Badge>
       ),
     },
@@ -375,7 +393,7 @@ export default function SettingsPage() {
         <button
           onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
           className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label="Delete user"
+          aria-label={t('deleteUser')}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -394,179 +412,208 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
       </div>
 
-      {/* Instance Settings */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Instance Settings</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 max-w-md">
-            <Input
-              id="instance-name"
-              label="Instance Name"
-              placeholder="My IoT Sentinel"
-              value={settings.instanceName}
-              onChange={(e) => setSettings({ ...settings, instanceName: e.target.value })}
-            />
-            <Select
-              id="language"
-              label="Language"
-              options={LANGUAGE_OPTIONS}
-              value={settings.language}
-              onChange={(e) => setSettings({ ...settings, language: e.target.value })}
-            />
-            <Select
-              id="timezone"
-              label="Timezone"
-              options={TIMEZONE_OPTIONS}
-              value={settings.timezone}
-              onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Scanner Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Scanner Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 max-w-md">
-            <Input
-              id="max-concurrent-scans"
-              label="Max Concurrent Scans"
-              type="number"
-              min={1}
-              max={20}
-              value={settings.maxConcurrentScans}
-              onChange={(e) => setSettings({ ...settings, maxConcurrentScans: Number(e.target.value) })}
-            />
-            <Input
-              id="cooldown-seconds"
-              label="Cooldown (seconds)"
-              type="number"
-              min={0}
-              value={settings.cooldownSeconds}
-              onChange={(e) => setSettings({ ...settings, cooldownSeconds: Number(e.target.value) })}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Monitor Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Monitor Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 max-w-md">
-            <Input
-              id="status-check-interval"
-              label="Status Check Interval (seconds)"
-              type="number"
-              min={5}
-              value={settings.statusCheckInterval}
-              onChange={(e) => setSettings({ ...settings, statusCheckInterval: Number(e.target.value) })}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Save button */}
-      <div className="flex items-center gap-4">
-        <Button onClick={handleSaveSettings} disabled={saving}>
-          {saving ? 'Saving...' : 'Save Settings'}
-        </Button>
-        {saveMessage && (
-          <p className={`text-sm ${saveMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
-            {saveMessage.text}
-          </p>
-        )}
+      {/* Tabs */}
+      <div className="border-b border-border">
+        <nav className="flex gap-1 -mb-px">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Backup section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Backup</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Export a password-protected backup of all data, or restore from a previous backup.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => { setExportOpen(true); setExportMessage(null); }}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Backup
+      {/* General Tab */}
+      {activeTab === 'general' && (
+        <>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>{t('instanceSettings')}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-w-md">
+                <Input
+                  id="instance-name"
+                  label={t('instanceName')}
+                  placeholder={t('instanceNamePlaceholder')}
+                  value={settings.instanceName}
+                  onChange={(e) => setSettings({ ...settings, instanceName: e.target.value })}
+                />
+                <Select
+                  id="language"
+                  label={t('language')}
+                  options={LANGUAGE_OPTIONS}
+                  value={settings.language}
+                  onChange={(e) => setSettings({ ...settings, language: e.target.value })}
+                />
+                <Select
+                  id="timezone"
+                  label={t('timezone')}
+                  options={TIMEZONE_OPTIONS}
+                  value={settings.timezone}
+                  onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('scannerSettings')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-w-md">
+                <Input
+                  id="max-concurrent-scans"
+                  label={t('maxConcurrentScans')}
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={settings.maxConcurrentScans}
+                  onChange={(e) => setSettings({ ...settings, maxConcurrentScans: Number(e.target.value) })}
+                />
+                <Input
+                  id="cooldown-seconds"
+                  label={t('cooldownSeconds')}
+                  type="number"
+                  min={0}
+                  value={settings.cooldownSeconds}
+                  onChange={(e) => setSettings({ ...settings, cooldownSeconds: Number(e.target.value) })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('monitorSettings')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-w-md">
+                <Input
+                  id="status-check-interval"
+                  label={t('statusCheckInterval')}
+                  type="number"
+                  min={5}
+                  value={settings.statusCheckInterval}
+                  onChange={(e) => setSettings({ ...settings, statusCheckInterval: Number(e.target.value) })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center gap-4">
+            <Button onClick={handleSaveSettings} disabled={saving}>
+              {saving ? tc('saving') : t('saveSettings')}
             </Button>
-            <Button variant="secondary" onClick={() => { setRestoreOpen(true); setRestoreMessage(null); }}>
-              <Upload className="h-4 w-4 mr-2" />
-              Restore Backup
+            {saveMessage && (
+              <p className={`text-sm ${saveMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
+                {saveMessage.text}
+              </p>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Thing Types Tab */}
+      {activeTab === 'thing-types' && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {t('thingTypesDesc')}
+            </p>
+            <Button onClick={openCreateTypeModal}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('addType')}
             </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Thing Types section */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Thing Types</h2>
+          <DataTable
+            columns={typeColumns}
+            data={thingTypes}
+            loading={false}
+          />
+        </>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === 'users' && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {t('usersDesc')}
+            </p>
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('addUser')}
+            </Button>
           </div>
-          <Button onClick={openCreateTypeModal}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Type
-          </Button>
-        </div>
 
-        <DataTable
-          columns={typeColumns}
-          data={thingTypes}
-          loading={false}
-        />
-      </div>
+          <DataTable
+            columns={userColumns}
+            data={users}
+            loading={loadingUsers}
+          />
+        </>
+      )}
 
-      {/* Users section */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Users</h2>
-          </div>
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
-        </div>
-
-        <DataTable
-          columns={userColumns}
-          data={users}
-          loading={loadingUsers}
-        />
-      </div>
+      {/* Backup Tab */}
+      {activeTab === 'backup' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('backupRestore')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t('backupDesc')}
+            </p>
+            <div className="flex gap-3">
+              <Button variant="secondary" onClick={() => { setExportOpen(true); setExportMessage(null); }}>
+                <Download className="h-4 w-4 mr-2" />
+                {t('exportBackup')}
+              </Button>
+              <Button variant="secondary" onClick={() => { setRestoreOpen(true); setRestoreMessage(null); }}>
+                <Upload className="h-4 w-4 mr-2" />
+                {t('restoreBackup')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Add User Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Add User">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('addUser')}>
         <form onSubmit={handleAddUser} className="space-y-4">
           <Input
             id="user-username"
-            label="Username"
-            placeholder="john.doe"
+            label={t('username')}
+            placeholder={t('usernamePlaceholder')}
             value={userForm.username}
             onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
             required
           />
           <Input
             id="user-password"
-            label="Password"
+            label={t('password')}
             type="password"
             placeholder="••••••••"
             value={userForm.password}
@@ -575,17 +622,17 @@ export default function SettingsPage() {
           />
           <Select
             id="user-role"
-            label="Role"
+            label={t('role')}
             options={ROLE_OPTIONS}
             value={userForm.role}
             onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={addingUser}>
-              {addingUser ? 'Adding...' : 'Add User'}
+              {addingUser ? tc('adding') : t('addUser')}
             </Button>
           </div>
         </form>
@@ -595,22 +642,22 @@ export default function SettingsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteUser}
-        title="Delete User"
-        message={`Are you sure you want to delete user "${deleteTarget?.username}"? This action cannot be undone.`}
+        title={t('deleteUser')}
+        message={t('deleteUserConfirm', { name: deleteTarget?.username ?? '' })}
         loading={deleting}
       />
 
       {/* Export Backup Modal */}
-      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title="Export Backup">
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title={t('exportTitle')}>
         <form onSubmit={handleExport} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Choose a password to protect the backup file. Credentials will be re-encrypted with this password.
+            {t('exportDesc')}
           </p>
           <Input
             id="export-password"
-            label="Backup Password"
+            label={t('backupPassword')}
             type="password"
-            placeholder="Enter a strong password"
+            placeholder={t('exportPasswordPlaceholder')}
             value={exportPassword}
             onChange={(e) => setExportPassword(e.target.value)}
             required
@@ -622,23 +669,23 @@ export default function SettingsPage() {
           )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setExportOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={exporting || !exportPassword}>
-              {exporting ? 'Exporting...' : 'Export'}
+              {exporting ? t('exporting') : t('export')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Restore Backup Modal */}
-      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title="Restore Backup">
+      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title={t('restoreTitle')}>
         <form onSubmit={handleRestore} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Upload a backup file and enter the password used during export. This will replace locals, networks, things, groups, and notification rules.
+            {t('restoreDesc')}
           </p>
           <div>
-            <label htmlFor="restore-file" className="block text-sm font-medium mb-1">Backup File</label>
+            <label htmlFor="restore-file" className="block text-sm font-medium mb-1">{t('backupFile')}</label>
             <input
               id="restore-file"
               type="file"
@@ -650,9 +697,9 @@ export default function SettingsPage() {
           </div>
           <Input
             id="restore-password"
-            label="Backup Password"
+            label={t('backupPassword')}
             type="password"
-            placeholder="Password used during export"
+            placeholder={t('restorePasswordPlaceholder')}
             value={restorePassword}
             onChange={(e) => setRestorePassword(e.target.value)}
             required
@@ -664,10 +711,10 @@ export default function SettingsPage() {
           )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setRestoreOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={restoring || !restoreFile || !restorePassword}>
-              {restoring ? 'Restoring...' : 'Restore'}
+              {restoring ? t('restoring') : t('restoreBackup')}
             </Button>
           </div>
         </form>
@@ -677,21 +724,21 @@ export default function SettingsPage() {
       <Modal
         open={typeModalOpen}
         onClose={() => setTypeModalOpen(false)}
-        title={editingType ? 'Edit Thing Type' : 'Create Thing Type'}
+        title={editingType ? t('editThingType') : t('createThingType')}
       >
         <form onSubmit={handleCreateOrUpdateType} className="space-y-4">
           <Input
             id="type-name"
-            label="Name"
-            placeholder="e.g. Security Camera"
+            label={t('typeName')}
+            placeholder={t('typeNamePlaceholder')}
             value={typeForm.name}
             onChange={(e) => handleTypeNameChange(e.target.value)}
             required
           />
           <Input
             id="type-slug"
-            label="Slug"
-            placeholder="e.g. security-camera"
+            label={t('typeSlug')}
+            placeholder={t('typeSlugPlaceholder')}
             value={typeForm.slug}
             onChange={(e) => setTypeForm({ ...typeForm, slug: e.target.value })}
             required
@@ -701,7 +748,7 @@ export default function SettingsPage() {
             onChange={(icon) => setTypeForm({ ...typeForm, icon })}
           />
           <div className="space-y-1">
-            <label htmlFor="type-color" className="text-sm font-medium text-foreground">Color</label>
+            <label htmlFor="type-color" className="text-sm font-medium text-foreground">{t('typeColor')}</label>
             <div className="flex items-center gap-2">
               <input
                 id="type-color"
@@ -719,7 +766,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-foreground">Capabilities</legend>
+            <legend className="text-sm font-medium text-foreground">{t('typeCapabilities')}</legend>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -730,7 +777,7 @@ export default function SettingsPage() {
                 })}
                 className="rounded border-border"
               />
-              Enable Channels
+              {t('enableChannels')}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -742,7 +789,7 @@ export default function SettingsPage() {
                 })}
                 className="rounded border-border"
               />
-              Enable Port Scan
+              {t('enablePortScan')}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -754,15 +801,15 @@ export default function SettingsPage() {
                 })}
                 className="rounded border-border"
               />
-              Enable Credentials
+              {t('enableCredentials')}
             </label>
           </fieldset>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setTypeModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={savingType}>
-              {savingType ? 'Saving...' : editingType ? 'Update' : 'Create'}
+              {savingType ? tc('saving') : editingType ? tc('update') : tc('create')}
             </Button>
           </div>
         </form>
@@ -773,8 +820,8 @@ export default function SettingsPage() {
         open={!!deleteTypeTarget}
         onClose={() => setDeleteTypeTarget(null)}
         onConfirm={handleDeleteType}
-        title="Delete Thing Type"
-        message={`Are you sure you want to delete type "${deleteTypeTarget?.name}"? Things using this type will need to be reassigned.`}
+        title={t('deleteThingType')}
+        message={t('deleteThingTypeConfirm', { name: deleteTypeTarget?.name ?? '' })}
         loading={deletingType}
       />
     </div>

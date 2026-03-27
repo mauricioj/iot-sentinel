@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,8 @@ type SetupMode = 'fresh' | 'restore' | null;
 
 export default function SetupPage() {
   const router = useRouter();
+  const t = useTranslations('Setup');
+  const tc = useTranslations('Common');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,12 +50,18 @@ export default function SetupPage() {
   const [backupPassword, setBackupPassword] = useState('');
   const [restoreResult, setRestoreResult] = useState<string | null>(null);
 
+  const handleLanguageChange = (newLang: string) => {
+    setLanguage(newLang);
+    document.cookie = `locale=${newLang};path=/;max-age=31536000`;
+    router.refresh();
+  };
+
   const totalSteps = mode === 'restore' ? 3 : 4;
   const displayStep = step;
 
   const handleComplete = async () => {
     if (adminPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('passwordsMismatch'));
       return;
     }
     setLoading(true);
@@ -109,9 +118,9 @@ export default function SetupPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mb-3">
             <Radar className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold">Welcome to IoT Sentinel</h1>
+          <h1 className="text-xl font-bold">{t('welcome')}</h1>
           <p className="text-sm text-muted-foreground">
-            Step {displayStep} of {totalSteps} — Initial setup
+            {t('stepOf', { step: displayStep, total: totalSteps })}
           </p>
           <div className="flex gap-1 mt-3">
             {Array.from({ length: totalSteps }).map((_, i) => (
@@ -128,27 +137,27 @@ export default function SetupPage() {
           <div className="space-y-4">
             <Select
               id="language"
-              label="Language"
+              label={t('language')}
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => handleLanguageChange(e.target.value)}
               options={LANGUAGES}
             />
             <Input
               id="instanceName"
-              label="Instance Name"
+              label={t('instanceName')}
               value={instanceName}
               onChange={(e) => setInstanceName(e.target.value)}
-              placeholder="IoT Sentinel"
+              placeholder={t('instanceNamePlaceholder')}
             />
             <Select
               id="timezone"
-              label="Timezone"
+              label={t('timezone')}
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               options={TIMEZONES}
             />
             <Button className="w-full" onClick={() => setStep(2)}>
-              Next <ArrowRight className="ml-2 h-4 w-4" />
+              {tc('next')} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         )}
@@ -156,7 +165,7 @@ export default function SetupPage() {
         {/* Step 2: Choose mode */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-center">How do you want to start?</h2>
+            <h2 className="text-lg font-semibold text-center">{t('howToStart')}</h2>
             <div className="grid gap-3">
               <button
                 type="button"
@@ -169,8 +178,8 @@ export default function SetupPage() {
                   <Plus className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Start Fresh</p>
-                  <p className="text-sm text-muted-foreground">Create a new admin account and configure from scratch</p>
+                  <p className="font-medium">{t('startFresh')}</p>
+                  <p className="text-sm text-muted-foreground">{t('startFreshDesc')}</p>
                 </div>
               </button>
               <button
@@ -184,13 +193,13 @@ export default function SetupPage() {
                   <Upload className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Restore Backup</p>
-                  <p className="text-sm text-muted-foreground">Restore data from a previous backup file</p>
+                  <p className="font-medium">{t('restoreBackup')}</p>
+                  <p className="text-sm text-muted-foreground">{t('restoreBackupDesc')}</p>
                 </div>
               </button>
             </div>
             <Button variant="secondary" className="w-full" onClick={() => setStep(1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
             </Button>
           </div>
         )}
@@ -200,37 +209,37 @@ export default function SetupPage() {
           <div className="space-y-4">
             <Input
               id="adminUsername"
-              label="Admin Username"
+              label={t('adminUsername')}
               value={adminUsername}
               onChange={(e) => setAdminUsername(e.target.value)}
-              placeholder="admin"
+              placeholder={t('adminUsernamePlaceholder')}
             />
             <Input
               id="adminPassword"
-              label="Password"
+              label={t('password')}
               type="password"
               value={adminPassword}
               onChange={(e) => setAdminPassword(e.target.value)}
-              placeholder="Min 6 characters"
+              placeholder={t('passwordPlaceholder')}
             />
             <Input
               id="confirmPassword"
-              label="Confirm Password"
+              label={t('confirmPassword')}
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat password"
+              placeholder={t('confirmPasswordPlaceholder')}
             />
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => setStep(2)}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
               </Button>
               <Button
                 className="flex-1"
                 onClick={() => setStep(4)}
                 disabled={!adminUsername || adminPassword.length < 6 || adminPassword !== confirmPassword}
               >
-                Next <ArrowRight className="ml-2 h-4 w-4" />
+                {tc('next')} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -239,13 +248,12 @@ export default function SetupPage() {
         {/* Step 3 (restore): Upload backup */}
         {step === 3 && mode === 'restore' && !restoreResult && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Restore from Backup</h2>
+            <h2 className="text-lg font-semibold">{t('restoreFrom')}</h2>
             <p className="text-sm text-muted-foreground">
-              Upload a backup file and enter the password used during export.
-              All data including users will be restored.
+              {t('restoreUploadDesc')}
             </p>
             <div>
-              <label htmlFor="backup-file" className="block text-sm font-medium mb-1">Backup File</label>
+              <label htmlFor="backup-file" className="block text-sm font-medium mb-1">{t('backupFile')}</label>
               <input
                 id="backup-file"
                 type="file"
@@ -256,23 +264,23 @@ export default function SetupPage() {
             </div>
             <Input
               id="backup-password"
-              label="Backup Password"
+              label={t('backupPassword')}
               type="password"
-              placeholder="Password used during export"
+              placeholder={t('backupPasswordPlaceholder')}
               value={backupPassword}
               onChange={(e) => setBackupPassword(e.target.value)}
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => { setStep(2); setError(''); }}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
               </Button>
               <Button
                 className="flex-1"
                 onClick={handleRestore}
                 disabled={loading || !backupFile || !backupPassword}
               >
-                {loading ? 'Restoring...' : <><Upload className="mr-2 h-4 w-4" /> Restore</>}
+                {loading ? t('restoring') : <><Upload className="mr-2 h-4 w-4" /> {t('restore')}</>}
               </Button>
             </div>
           </div>
@@ -285,16 +293,16 @@ export default function SetupPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mx-auto mb-3">
                 <Check className="h-6 w-6 text-success" />
               </div>
-              <h2 className="text-lg font-semibold">Restore Complete</h2>
+              <h2 className="text-lg font-semibold">{t('restoreComplete')}</h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Successfully restored: {restoreResult}
+                {t('restoreSuccess', { details: restoreResult })}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                You can now log in with your previous credentials.
+                {t('loginRedirect')}
               </p>
             </div>
             <Button className="w-full" onClick={() => router.push('/login')}>
-              Go to Login <ArrowRight className="ml-2 h-4 w-4" />
+              {t('goToLogin')} <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         )}
@@ -302,32 +310,32 @@ export default function SetupPage() {
         {/* Step 4 (fresh): Review */}
         {step === 4 && mode === 'fresh' && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Review</h2>
+            <h2 className="text-lg font-semibold">{t('review')}</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Language</span>
+                <span className="text-muted-foreground">{t('reviewLanguage')}</span>
                 <span>{LANGUAGES.find((l) => l.value === language)?.label}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Instance</span>
+                <span className="text-muted-foreground">{t('reviewInstance')}</span>
                 <span>{instanceName}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Timezone</span>
+                <span className="text-muted-foreground">{t('reviewTimezone')}</span>
                 <span>{timezone}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">Admin user</span>
+                <span className="text-muted-foreground">{t('reviewAdmin')}</span>
                 <span>{adminUsername}</span>
               </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => setStep(3)}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
               </Button>
               <Button className="flex-1" onClick={handleComplete} disabled={loading}>
-                {loading ? 'Setting up...' : <><Check className="mr-2 h-4 w-4" /> Complete</>}
+                {loading ? t('settingUp') : <><Check className="mr-2 h-4 w-4" /> {t('complete')}</>}
               </Button>
             </div>
           </div>

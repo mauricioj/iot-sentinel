@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/auth-context';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Radar } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations('Login');
   const { login, isAuthenticated } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -55,21 +57,21 @@ export default function LoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary mb-3">
             <Radar className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold">IoT Sentinel</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your account</p>
+          <h1 className="text-xl font-bold">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             id="username"
-            label="Username"
+            label={t('username')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="admin"
+            placeholder={t('usernamePlaceholder')}
             autoComplete="username"
           />
           <Input
             id="password"
-            label="Password"
+            label={t('password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +80,7 @@ export default function LoginPage() {
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={!username || !password}>
-            Sign in
+            {t('submit')}
           </Button>
         </form>
       </Card>

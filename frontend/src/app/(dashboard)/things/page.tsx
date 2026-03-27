@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Box, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,17 +20,10 @@ import { usePagination } from '@/hooks/use-pagination';
 import { useThingTypes } from '@/contexts/thing-types-context';
 import { Thing, Network, Group } from '@/types';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
-  { value: 'discovered', label: 'Discovered' },
-  { value: 'registered', label: 'Registered' },
-  { value: 'online', label: 'Online' },
-  { value: 'offline', label: 'Offline' },
-  { value: 'unknown', label: 'Unknown' },
-];
-
 export default function ThingsPage() {
   const router = useRouter();
+  const t = useTranslations('Things');
+  const tc = useTranslations('Common');
   const { thingTypes } = useThingTypes();
   const [things, setThings] = useState<Thing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,32 +140,41 @@ export default function ThingsPage() {
     }
   };
 
+  const statusOptions = [
+    { value: '', label: t('allStatuses') },
+    { value: 'discovered', label: t('discovered') },
+    { value: 'registered', label: t('registered') },
+    { value: 'online', label: t('online') },
+    { value: 'offline', label: t('offline') },
+    { value: 'unknown', label: t('unknown') },
+  ];
+
   const networkOptions = [
-    { value: '', label: 'All networks' },
+    { value: '', label: t('allNetworks') },
     ...networks.map((n) => ({ value: n._id, label: n.name })),
   ];
 
   const groupOptions = [
-    { value: '', label: 'All groups' },
+    { value: '', label: t('allGroups') },
     ...groups.map((g) => ({ value: g._id, label: g.name })),
   ];
 
   const typeOptions = [
-    { value: '', label: 'Select type' },
-    ...thingTypes.map((t) => ({ value: t.slug, label: t.name })),
+    { value: '', label: t('selectType') },
+    ...thingTypes.map((tt) => ({ value: tt.slug, label: tt.name })),
   ];
 
   const networkSelectOptions = [
-    { value: '', label: 'Select network' },
+    { value: '', label: t('selectNetwork') },
     ...networks.map((n) => ({ value: n._id, label: n.name })),
   ];
 
   const columns = [
     {
       key: 'name',
-      header: 'Name',
+      header: tc('name'),
       render: (item: Thing) => {
-        const tt = thingTypes.find((t) => t.slug === item.type);
+        const tt = thingTypes.find((typ) => typ.slug === item.type);
         const Icon = getIconComponent(tt?.icon || 'help-circle');
         return (
           <div className="flex items-center gap-2">
@@ -181,12 +184,12 @@ export default function ThingsPage() {
         );
       },
     },
-    { key: 'ipAddress', header: 'IP Address', render: (item: Thing) => item.ipAddress || '-' },
-    { key: 'macAddress', header: 'MAC Address', render: (item: Thing) => item.macAddress || '-' },
-    { key: 'vendor', header: 'Vendor', render: (item: Thing) => item.vendor || '-' },
+    { key: 'ipAddress', header: t('ipAddress'), render: (item: Thing) => item.ipAddress || '-' },
+    { key: 'macAddress', header: t('macAddress'), render: (item: Thing) => item.macAddress || '-' },
+    { key: 'vendor', header: t('vendor'), render: (item: Thing) => item.vendor || '-' },
     {
       key: 'status',
-      header: 'Status',
+      header: tc('status'),
       render: (item: Thing) => <StatusBadge registrationStatus={item.registrationStatus} healthStatus={item.healthStatus} />,
     },
     {
@@ -197,7 +200,7 @@ export default function ThingsPage() {
         <button
           onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); }}
           className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label="Delete"
+          aria-label={tc('delete')}
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -208,15 +211,15 @@ export default function ThingsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Things</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="flex gap-2">
           <Button variant="destructive" onClick={() => setDeleteDiscoveredOpen(true)}>
             <XCircle className="h-4 w-4 mr-2" />
-            Delete Discovered
+            {t('deleteDiscovered')}
           </Button>
           <Button onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            New Thing
+            {t('newThing')}
           </Button>
         </div>
       </div>
@@ -224,13 +227,13 @@ export default function ThingsPage() {
       {/* Filter bar */}
       <div className="flex flex-wrap gap-3 mb-4">
         <Input
-          placeholder="Search things..."
+          placeholder={t('searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-56"
         />
         <Select
-          options={STATUS_OPTIONS}
+          options={statusOptions}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="w-44"
@@ -252,12 +255,12 @@ export default function ThingsPage() {
       {!loading && things.length === 0 ? (
         <EmptyState
           icon={Box}
-          title="No things found"
-          description="Add your first IoT device or adjust the filters."
+          title={t('emptyTitle')}
+          description={t('emptyDesc')}
           action={
             <Button onClick={() => setModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              New Thing
+              {t('newThing')}
             </Button>
           }
         />
@@ -272,14 +275,14 @@ export default function ThingsPage() {
           {(pagination.hasNext || pagination.hasPrev) && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Page {pagination.page} of {pagination.pages}
+                {tc('pageOf', { page: pagination.page, pages: pagination.pages })}
               </p>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" onClick={pagination.prev} disabled={!pagination.hasPrev}>
-                  Previous
+                  {tc('previous')}
                 </Button>
                 <Button variant="secondary" size="sm" onClick={pagination.next} disabled={!pagination.hasNext}>
-                  Next
+                  {tc('next')}
                 </Button>
               </div>
             </div>
@@ -288,50 +291,50 @@ export default function ThingsPage() {
       )}
 
       {/* Create Thing Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Thing">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newThing')}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="thing-name"
-            label="Name"
-            placeholder="My Router"
+            label={tc('name')}
+            placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
           <Select
             id="thing-type"
-            label="Type"
+            label={tc('type')}
             options={typeOptions}
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value })}
           />
           <Select
             id="thing-network"
-            label="Network"
+            label={t('network')}
             options={networkSelectOptions}
             value={form.networkId}
             onChange={(e) => setForm({ ...form, networkId: e.target.value })}
           />
           <Input
             id="thing-mac"
-            label="MAC Address"
-            placeholder="AA:BB:CC:DD:EE:FF"
+            label={t('macAddress')}
+            placeholder={t('macPlaceholder')}
             value={form.macAddress}
             onChange={(e) => setForm({ ...form, macAddress: e.target.value })}
           />
           <Input
             id="thing-ip"
-            label="IP Address"
-            placeholder="192.168.1.100"
+            label={t('ipAddress')}
+            placeholder={t('ipPlaceholder')}
             value={form.ipAddress}
             onChange={(e) => setForm({ ...form, ipAddress: e.target.value })}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
-              Cancel
+              {tc('cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Creating...' : 'Create'}
+              {saving ? tc('creating') : tc('create')}
             </Button>
           </div>
         </form>
@@ -341,8 +344,8 @@ export default function ThingsPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Thing"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        title={t('deleteThing')}
+        message={t('deleteThingConfirm', { name: deleteTarget?.name ?? '' })}
         loading={deleting}
       />
 
@@ -350,8 +353,8 @@ export default function ThingsPage() {
         open={deleteDiscoveredOpen}
         onClose={() => setDeleteDiscoveredOpen(false)}
         onConfirm={handleDeleteDiscovered}
-        title="Delete All Discovered Things"
-        message="This will remove all things with status 'discovered' (found by scan but not registered). This action cannot be undone."
+        title={t('deleteAllDiscovered')}
+        message={t('deleteAllDiscoveredConfirm')}
         loading={deletingDiscovered}
       />
     </div>

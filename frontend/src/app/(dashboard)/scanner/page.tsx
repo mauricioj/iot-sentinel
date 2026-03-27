@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
@@ -12,12 +13,6 @@ import { scannerService, ScanJob } from '@/services/scanner.service';
 import { networksService } from '@/services/networks.service';
 import { usePagination } from '@/hooks/use-pagination';
 import { Network } from '@/types';
-
-const SCAN_TYPES = [
-  { value: 'discovery', label: 'Discovery' },
-  { value: 'status_check', label: 'Status Check' },
-  { value: 'deep_scan', label: 'Deep Scan' },
-];
 
 type StatusVariant = 'secondary' | 'warning' | 'success' | 'destructive';
 
@@ -37,6 +32,15 @@ function formatDate(dateStr: string | null | undefined) {
 }
 
 export default function ScannerPage() {
+  const t = useTranslations('Scanner');
+  const tc = useTranslations('Common');
+
+  const SCAN_TYPES = [
+    { value: 'discovery', label: t('typeDiscovery') },
+    { value: 'status_check', label: t('typeStatusCheck') },
+    { value: 'deep_scan', label: t('typeDeepScan') },
+  ];
+
   const [networks, setNetworks] = useState<Network[]>([]);
   const [networkId, setNetworkId] = useState('');
   const [scanType, setScanType] = useState('discovery');
@@ -102,39 +106,39 @@ export default function ScannerPage() {
 
   const handleStartScan = async () => {
     if (!networkId) {
-      setScanMessage({ type: 'error', text: 'Please select a network.' });
+      setScanMessage({ type: 'error', text: t('selectNetworkError') });
       return;
     }
     setScanning(true);
     setScanMessage(null);
     try {
       await scannerService.discover(networkId, scanType);
-      setScanMessage({ type: 'success', text: 'Scan job queued successfully.' });
+      setScanMessage({ type: 'success', text: t('scanQueued') });
       setLoadingJobs(true);
       await fetchJobs();
     } catch (err) {
-      setScanMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to start scan.' });
+      setScanMessage({ type: 'error', text: err instanceof Error ? err.message : t('scanFailed') });
     } finally {
       setScanning(false);
     }
   };
 
   const networkOptions = [
-    { value: '', label: 'Select a network' },
+    { value: '', label: t('selectNetwork') },
     ...networks.map((n) => ({ value: n._id, label: n.name })),
   ];
 
   const columns = [
     {
       key: 'type',
-      header: 'Type',
+      header: tc('type'),
       render: (item: ScanJob) => (
         <span className="capitalize">{item.type.replace('_', ' ')}</span>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: tc('status'),
       render: (item: ScanJob) => (
         <Badge variant={statusVariant(item.status)}>
           {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -143,24 +147,24 @@ export default function ScannerPage() {
     },
     {
       key: 'triggeredBy',
-      header: 'Triggered By',
+      header: t('triggeredBy'),
       render: (item: ScanJob) => (
         <span className="capitalize">{item.triggeredBy}</span>
       ),
     },
     {
       key: 'startedAt',
-      header: 'Started',
+      header: t('started'),
       render: (item: ScanJob) => formatDate(item.startedAt),
     },
     {
       key: 'completedAt',
-      header: 'Completed',
+      header: t('completed'),
       render: (item: ScanJob) => formatDate(item.completedAt),
     },
     {
       key: 'results',
-      header: 'Results',
+      header: t('results'),
       render: (item: ScanJob) => {
         const count = Array.isArray(item.results) ? item.results.length : 0;
         if (item.status !== 'completed') return '-';
@@ -171,19 +175,19 @@ export default function ScannerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Scanner</h1>
+      <h1 className="text-2xl font-bold">{t('title')}</h1>
 
       {/* New Scan card */}
       <Card>
         <CardHeader>
-          <CardTitle>New Scan</CardTitle>
+          <CardTitle>{t('newScan')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4 items-end">
             <div className="w-64">
               <Select
                 id="scan-network"
-                label="Network"
+                label={t('network')}
                 options={networkOptions}
                 value={networkId}
                 onChange={(e) => setNetworkId(e.target.value)}
@@ -192,7 +196,7 @@ export default function ScannerPage() {
             <div className="w-48">
               <Select
                 id="scan-type"
-                label="Scan Type"
+                label={t('scanType')}
                 options={SCAN_TYPES}
                 value={scanType}
                 onChange={(e) => setScanType(e.target.value)}
@@ -200,7 +204,7 @@ export default function ScannerPage() {
             </div>
             <Button onClick={handleStartScan} disabled={scanning || !networkId}>
               <Scan className="h-4 w-4 mr-2" />
-              {scanning ? 'Starting...' : 'Start Scan'}
+              {scanning ? t('starting') : t('startScan')}
             </Button>
           </div>
           {scanMessage && (
@@ -213,12 +217,12 @@ export default function ScannerPage() {
 
       {/* Job History */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Job History</h2>
+        <h2 className="text-lg font-semibold mb-3">{t('jobHistory')}</h2>
         {!loadingJobs && jobs.length === 0 ? (
           <EmptyState
             icon={Scan}
-            title="No scan jobs yet"
-            description="Start a scan above to see job history here."
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
           />
         ) : (
           <>
@@ -230,14 +234,14 @@ export default function ScannerPage() {
             {(pagination.hasNext || pagination.hasPrev) && (
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Page {pagination.page} of {pagination.pages}
+                  {tc('pageOf', { page: pagination.page, pages: pagination.pages })}
                 </p>
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" onClick={pagination.prev} disabled={!pagination.hasPrev}>
-                    Previous
+                    {tc('previous')}
                   </Button>
                   <Button variant="secondary" size="sm" onClick={pagination.next} disabled={!pagination.hasNext}>
-                    Next
+                    {tc('next')}
                   </Button>
                 </div>
               </div>

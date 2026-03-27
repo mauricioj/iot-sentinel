@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { Badge } from '@/components/ui/badge';
 import { NotificationsDropdown } from './notifications-dropdown';
 
 export function Header() {
+  const t = useTranslations('Header');
   const { user, logout } = useAuth();
 
   return (
@@ -21,7 +23,7 @@ export function Header() {
         <button
           onClick={logout}
           className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          title="Logout"
+          title={t('logout')}
         >
           <LogOut className="h-5 w-5" />
         </button>
