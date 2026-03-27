@@ -40,8 +40,14 @@ export class ThingsController {
     return this.statusHistoryService.getHistory(id, range);
   }
 
+  @Get(':id/credentials')
+  @ApiOperation({ summary: 'Get decrypted credentials for a thing' })
+  getCredentials(@Param('id') id: string) {
+    return this.thingsService.getCredentials(id);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get thing by ID (credentials decrypted)' })
+  @ApiOperation({ summary: 'Get thing by ID (without credentials)' })
   findOne(@Param('id') id: string) {
     return this.thingsService.findById(id);
   }

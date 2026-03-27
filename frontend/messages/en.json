@@ -97,7 +97,8 @@
     "notes": "Notes:",
     "copyUsername": "Copy username",
     "copyPassword": "Copy password",
-    "clickReveal": "Click reveal to show credentials"
+    "clickReveal": "Click reveal to show credentials",
+    "fetchError": "Failed to load credentials"
   },
   "StatusHistory": {
     "title": "Status History",

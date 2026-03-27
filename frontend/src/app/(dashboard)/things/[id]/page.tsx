@@ -76,7 +76,7 @@ export default function ThingDetailPage() {
         vendor: data.vendor || '',
         os: data.os || '',
         description: data.description || '',
-        credentials: data.credentials || { username: '', password: '', notes: '' },
+        credentials: { username: '', password: '', notes: '' },
       });
     } catch (err) {
       toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
@@ -204,7 +204,6 @@ export default function ThingDetailPage() {
     }
   };
 
-  const credentials = thing.credentials || { username: '', password: '', notes: '' };
   const assignedGroups = allGroups.filter((g) => (thing.groupIds || []).includes(g._id));
   const availableGroups = allGroups.filter((g) => !(thing.groupIds || []).includes(g._id));
 
@@ -468,7 +467,7 @@ export default function ThingDetailPage() {
       {thingTypeData?.capabilities.enableCredentials !== false && (
         <Card>
           <CardContent>
-            <CredentialsReveal credentials={credentials} />
+            <CredentialsReveal thingId={id} />
           </CardContent>
         </Card>
       )}

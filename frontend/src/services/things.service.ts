@@ -7,6 +7,7 @@ export const thingsService = {
     return api<PaginatedResponse<Thing>>(`/api/v1/things?${query}`);
   },
   findById: (id: string) => api<Thing>(`/api/v1/things/${id}`),
+  getCredentials: (id: string) => api<{ username: string; password: string; notes: string }>(`/api/v1/things/${id}/credentials`),
   create: (data: Partial<Thing>) =>
     api<Thing>('/api/v1/things', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<Thing>) =>

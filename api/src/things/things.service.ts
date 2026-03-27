@@ -49,7 +49,12 @@ export class ThingsService implements OnModuleInit {
 
   async findAll(query: ThingQueryDto): Promise<PaginatedResponseDto<Thing>> {
     const { data, total } = await this.thingsRepository.findAll(query);
-    return PaginatedResponseDto.create(data, total, query.page, query.limit);
+    const stripped = data.map((d) => {
+      const obj = d.toObject();
+      delete (obj as any).credentials;
+      return obj;
+    });
+    return PaginatedResponseDto.create(stripped as any, total, query.page, query.limit);
   }
 
   async findById(id: string): Promise<Record<string, unknown>> {
@@ -58,15 +63,27 @@ export class ThingsService implements OnModuleInit {
       throw new NotFoundException('Thing not found');
     }
     const obj = thing.toObject() as unknown as Record<string, unknown>;
-    if (obj.credentials) {
-      obj.credentials = this.decryptCredentials(obj.credentials as { username?: string; password?: string; notes?: string });
-    }
+    delete obj.credentials;
     return obj;
+  }
+
+  async getCredentials(id: string): Promise<{ username: string; password: string; notes: string }> {
+    const thing = await this.thingsRepository.findById(id);
+    if (!thing) {
+      throw new NotFoundException('Thing not found');
+    }
+    const creds = (thing.toObject() as any).credentials || {};
+    return this.decryptCredentials(creds);
   }
 
   async update(id: string, dto: UpdateThingDto): Promise<Thing> {
     if (dto.credentials) {
-      dto.credentials = this.encryptCredentials(dto.credentials);
+      const { username, password, notes } = dto.credentials;
+      if (!username && !password && !notes) {
+        delete dto.credentials;
+      } else {
+        dto.credentials = this.encryptCredentials(dto.credentials);
+      }
     }
     // Auto-register discovered things when user edits them
     const existing = await this.thingsRepository.findById(id);
@@ -94,7 +111,12 @@ export class ThingsService implements OnModuleInit {
 
   async findByGroupId(groupId: string, page: number, limit: number): Promise<PaginatedResponseDto<Thing>> {
     const { data, total } = await this.thingsRepository.findByGroupId(groupId, page, limit);
-    return PaginatedResponseDto.create(data, total, page, limit);
+    const stripped = data.map((d) => {
+      const obj = d.toObject();
+      delete (obj as any).credentials;
+      return obj;
+    });
+    return PaginatedResponseDto.create(stripped as any, total, page, limit);
   }
 
   private encryptCredentials(creds: { username?: string; password?: string; notes?: string }) {

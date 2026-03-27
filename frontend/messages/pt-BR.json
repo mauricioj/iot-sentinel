@@ -97,7 +97,8 @@
     "notes": "Notas:",
     "copyUsername": "Copiar usuário",
     "copyPassword": "Copiar senha",
-    "clickReveal": "Clique em revelar para mostrar as credenciais"
+    "clickReveal": "Clique em revelar para mostrar as credenciais",
+    "fetchError": "Falha ao carregar credenciais"
   },
   "StatusHistory": {
     "title": "Histórico de Status",
