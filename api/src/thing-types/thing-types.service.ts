@@ -22,6 +22,7 @@ const SEED_TYPES = [
   { name: 'HMI',          slug: 'hmi',          icon: 'tablet',       color: '#d946ef', capabilities: { enableChannels: false, enablePortScan: false, enableCredentials: true } },
   { name: 'Gateway',      slug: 'gateway',      icon: 'network',      color: '#14b8a6', capabilities: { enableChannels: false, enablePortScan: false, enableCredentials: true } },
   { name: 'Service',      slug: 'service',      icon: 'cloud',        color: '#6366f1', capabilities: { enableChannels: false, enablePortScan: true,  enableCredentials: true } },
+  { name: 'Smart Switch', slug: 'smart-switch', icon: 'plug-zap',     color: '#f97316', capabilities: { enableChannels: true,  enablePortScan: false, enableCredentials: true } },
   { name: 'Other',        slug: 'other',        icon: 'help-circle',  color: '#94a3b8', capabilities: { enableChannels: false, enablePortScan: false, enableCredentials: false } },
 ];
 

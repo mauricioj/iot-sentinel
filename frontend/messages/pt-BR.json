@@ -56,6 +56,7 @@
     "hmi": "IHM",
     "gateway": "Gateway",
     "service": "Serviço",
+    "smart-switch": "Interruptor Inteligente",
     "other": "Outro"
   },
   "Sidebar": {

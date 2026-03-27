@@ -56,6 +56,7 @@
     "hmi": "HMI",
     "gateway": "Gateway",
     "service": "Service",
+    "smart-switch": "Smart Switch",
     "other": "Other"
   },
   "Sidebar": {
