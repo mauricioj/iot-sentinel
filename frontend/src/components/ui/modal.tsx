@@ -16,6 +16,7 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, className, isDirty }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const mouseDownTargetRef = useRef<EventTarget | null>(null);
   const [showDirtyConfirm, setShowDirtyConfirm] = useState(false);
   const t = useTranslations('Modal');
 
@@ -58,7 +59,8 @@ export function Modal({ open, onClose, title, children, className, isDirty }: Mo
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
-      onClick={(e) => { if (e.target === overlayRef.current) handleClose(); }}
+      onMouseDown={(e) => { mouseDownTargetRef.current = e.target; }}
+      onClick={(e) => { if (e.target === overlayRef.current && mouseDownTargetRef.current === overlayRef.current) handleClose(); }}
     >
       <div className={cn(
         'w-full max-w-lg rounded-lg border border-border bg-card p-6 animate-[scaleIn_150ms_ease-out]',
