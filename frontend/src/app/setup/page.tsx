@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { authService } from '@/services/auth.service';
@@ -50,6 +50,13 @@ export default function SetupPage() {
   const [backupFile, setBackupFile] = useState<File | null>(null);
   const [backupPassword, setBackupPassword] = useState('');
   const [restoreResult, setRestoreResult] = useState<string | null>(null);
+
+  // Set locale cookie on mount with default language
+  useEffect(() => {
+    document.cookie = `locale=${language};path=/;max-age=31536000`;
+    router.refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
