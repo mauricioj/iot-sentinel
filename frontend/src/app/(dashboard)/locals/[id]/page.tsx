@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Network, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -21,6 +22,7 @@ export default function LocalDetailPage() {
   const id = params.id as string;
   const t = useTranslations('LocalDetail');
   const tc = useTranslations('Common');
+  const { toast } = useToast();
 
   const [local, setLocal] = useState<Local | null>(null);
   const [networks, setNetworks] = useState<NetworkType[]>([]);
@@ -53,7 +55,7 @@ export default function LocalDetailPage() {
       setLocal(data);
       setEditForm({ name: data.name, description: data.description, address: data.address });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingLocal(false);
     }
@@ -65,7 +67,7 @@ export default function LocalDetailPage() {
       const res = await networksService.findByLocal(id);
       setNetworks(res.data);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingNetworks(false);
     }
@@ -82,10 +84,11 @@ export default function LocalDetailPage() {
     setSaving(true);
     try {
       await localsService.update(id, editForm);
+      toast({ title: t('editSuccess'), variant: 'success' });
       setEditOpen(false);
       await fetchLocal();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -95,9 +98,10 @@ export default function LocalDetailPage() {
     setDeletingLocal(true);
     try {
       await localsService.delete(id);
+      toast({ title: t('deleteSuccess'), variant: 'success' });
       router.push('/locals');
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
       setDeletingLocal(false);
     }
   };
@@ -113,11 +117,12 @@ export default function LocalDetailPage() {
         vlanId: networkForm.vlanId ? Number(networkForm.vlanId) : null,
         description: networkForm.description,
       });
+      toast({ title: t('addNetworkSuccess'), variant: 'success' });
       setAddNetworkOpen(false);
       setNetworkForm({ name: '', cidr: '', gateway: '', vlanId: '', description: '' });
       await fetchNetworks();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSavingNetwork(false);
     }
@@ -147,11 +152,12 @@ export default function LocalDetailPage() {
         vlanId: editNetworkForm.vlanId ? Number(editNetworkForm.vlanId) : null,
         description: editNetworkForm.description,
       });
+      toast({ title: t('editNetworkSuccess'), variant: 'success' });
       setEditNetworkOpen(false);
       setEditingNetwork(null);
       await fetchNetworks();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSavingEditNetwork(false);
     }
@@ -162,10 +168,11 @@ export default function LocalDetailPage() {
     setDeletingNetwork(true);
     try {
       await networksService.delete(deleteNetworkTarget._id);
+      toast({ title: t('deleteNetworkSuccess'), variant: 'success' });
       setDeleteNetworkTarget(null);
       await fetchNetworks();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeletingNetwork(false);
     }
@@ -287,14 +294,13 @@ export default function LocalDetailPage() {
       </div>
 
       {/* Edit Local Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editLocal')}>
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editLocal')} isDirty={editForm.name !== (local?.name ?? '') || editForm.description !== (local?.description ?? '') || editForm.address !== (local?.address ?? '')}>
         <form onSubmit={handleEdit} className="space-y-4">
           <Input
             id="edit-name"
             label={tc('name')}
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-            required
           />
           <Input
             id="edit-description"
@@ -312,15 +318,15 @@ export default function LocalDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('saving') : tc('save')}
+            <Button type="submit" loading={saving}>
+              {tc('save')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Add Network Modal */}
-      <Modal open={addNetworkOpen} onClose={() => setAddNetworkOpen(false)} title={t('addNetwork')}>
+      <Modal open={addNetworkOpen} onClose={() => setAddNetworkOpen(false)} title={t('addNetwork')} isDirty={!!(networkForm.name || networkForm.cidr || networkForm.gateway || networkForm.vlanId || networkForm.description)}>
         <form onSubmit={handleAddNetwork} className="space-y-4">
           <Input
             id="net-name"
@@ -328,7 +334,6 @@ export default function LocalDetailPage() {
             placeholder={t('networkNamePlaceholder')}
             value={networkForm.name}
             onChange={(e) => setNetworkForm({ ...networkForm, name: e.target.value })}
-            required
           />
           <Input
             id="net-cidr"
@@ -336,7 +341,6 @@ export default function LocalDetailPage() {
             placeholder={t('cidrPlaceholder')}
             value={networkForm.cidr}
             onChange={(e) => setNetworkForm({ ...networkForm, cidr: e.target.value })}
-            required
           />
           <Input
             id="net-gateway"
@@ -364,22 +368,21 @@ export default function LocalDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setAddNetworkOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={savingNetwork}>
-              {savingNetwork ? tc('adding') : t('addNetwork')}
+            <Button type="submit" loading={savingNetwork}>
+              {t('addNetwork')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Edit Network Modal */}
-      <Modal open={editNetworkOpen} onClose={() => setEditNetworkOpen(false)} title={t('editNetwork')}>
+      <Modal open={editNetworkOpen} onClose={() => setEditNetworkOpen(false)} title={t('editNetwork')} isDirty={editNetworkForm.name !== (editingNetwork?.name ?? '') || editNetworkForm.cidr !== (editingNetwork?.cidr ?? '') || editNetworkForm.gateway !== (editingNetwork?.gateway ?? '') || editNetworkForm.vlanId !== (editingNetwork?.vlanId != null ? String(editingNetwork.vlanId) : '') || editNetworkForm.description !== (editingNetwork?.description ?? '')}>
         <form onSubmit={handleEditNetwork} className="space-y-4">
           <Input
             id="edit-net-name"
             label={tc('name')}
             value={editNetworkForm.name}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, name: e.target.value })}
-            required
           />
           <Input
             id="edit-net-cidr"
@@ -387,7 +390,6 @@ export default function LocalDetailPage() {
             placeholder={t('cidrPlaceholder')}
             value={editNetworkForm.cidr}
             onChange={(e) => setEditNetworkForm({ ...editNetworkForm, cidr: e.target.value })}
-            required
           />
           <Input
             id="edit-net-gateway"
@@ -414,8 +416,8 @@ export default function LocalDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setEditNetworkOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={savingEditNetwork}>
-              {savingEditNetwork ? tc('saving') : tc('save')}
+            <Button type="submit" loading={savingEditNetwork}>
+              {tc('save')}
             </Button>
           </div>
         </form>

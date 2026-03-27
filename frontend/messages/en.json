@@ -82,6 +82,11 @@
     "deleting": "Deleting...",
     "delete": "Delete"
   },
+  "Modal": {
+    "unsavedChanges": "You have unsaved changes. Discard?",
+    "keepEditing": "Keep Editing",
+    "discard": "Discard"
+  },
   "Credentials": {
     "title": "Credentials",
     "hide": "Hide",
@@ -291,7 +296,10 @@
     "deleteThing": "Delete Thing",
     "deleteThingConfirm": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
     "deleteAllDiscovered": "Delete All Discovered Things",
-    "deleteAllDiscoveredConfirm": "This will remove all things with status 'discovered' (found by scan but not registered). This action cannot be undone."
+    "deleteAllDiscoveredConfirm": "This will remove all things with status 'discovered' (found by scan but not registered). This action cannot be undone.",
+    "thingCreated": "Thing created successfully.",
+    "thingDeleted": "Thing deleted successfully.",
+    "discoveredDeleted": "Discovered things deleted successfully."
   },
   "ThingDetail": {
     "deepScan": "Deep Scan",
@@ -345,7 +353,14 @@
     "channelTypeOther": "Other",
     "channelDescLabel": "Description (optional)",
     "channelDescPlaceholder": "e.g., Controls the garage door",
-    "notFound": "Thing not found."
+    "notFound": "Thing not found.",
+    "thingSaved": "Thing saved successfully.",
+    "thingDeleted": "Thing deleted successfully.",
+    "channelAdded": "Channel added successfully.",
+    "channelRemoved": "Channel removed successfully.",
+    "addedToGroup": "Added to group successfully.",
+    "removedFromGroup": "Removed from group successfully.",
+    "deepScanStarted": "Deep scan started."
   },
   "Groups": {
     "title": "Groups",

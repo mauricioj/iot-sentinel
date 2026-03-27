@@ -40,7 +40,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full h-10 rounded border border-border bg-input px-3 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex items-center gap-2 w-full h-10 rounded border border-border bg-input px-3 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer"
       >
         <SelectedIcon className="h-5 w-5" />
         <span>{value || 'Select icon'}</span>
@@ -53,7 +53,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
               type="button"
               onClick={() => { onChange(name); setOpen(false); }}
               className={cn(
-                'flex flex-col items-center gap-1 rounded p-2 text-xs transition-colors',
+                'flex flex-col items-center gap-1 rounded p-2 text-xs transition-colors cursor-pointer',
                 value === name
                   ? 'bg-primary/20 text-primary'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground',

@@ -12,6 +12,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useToast } from '@/components/ui/toast';
 import { TypeSelect } from '@/components/ui/type-select';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { thingsService } from '@/services/things.service';
@@ -26,6 +27,7 @@ export default function ThingsPage() {
   const t = useTranslations('Things');
   const tc = useTranslations('Common');
   const { thingTypes } = useThingTypes();
+  const { toast } = useToast();
   const [things, setThings] = useState<Thing[]>([]);
   const [loading, setLoading] = useState(true);
   const [networks, setNetworks] = useState<Network[]>([]);
@@ -76,7 +78,7 @@ export default function ThingsPage() {
       setThings(res.data);
       pagination.setTotal(res.meta.total);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -88,8 +90,8 @@ export default function ThingsPage() {
   }, [fetchThings]);
 
   useEffect(() => {
-    networksService.findAll(1, 100).then((r) => setNetworks(r.data)).catch(console.error);
-    groupsService.findAll(1, 100).then((r) => setGroups(r.data)).catch(console.error);
+    networksService.findAll(1, 100).then((r) => setNetworks(r.data)).catch((err) => toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' }));
+    groupsService.findAll(1, 100).then((r) => setGroups(r.data)).catch((err) => toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' }));
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -106,9 +108,10 @@ export default function ThingsPage() {
       const created = await thingsService.create(payload as Partial<Thing>);
       setModalOpen(false);
       setForm({ name: '', type: 'other', networkId: '', macAddress: '', ipAddress: '' });
+      toast({ title: t('thingCreated'), variant: 'success' });
       router.push(`/things/${created._id}`);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -120,9 +123,10 @@ export default function ThingsPage() {
     try {
       await thingsService.delete(deleteTarget._id);
       setDeleteTarget(null);
+      toast({ title: t('thingDeleted'), variant: 'success' });
       await fetchThings();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -133,9 +137,10 @@ export default function ThingsPage() {
     try {
       await thingsService.deleteDiscovered();
       setDeleteDiscoveredOpen(false);
+      toast({ title: t('discoveredDeleted'), variant: 'success' });
       await fetchThings();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeletingDiscovered(false);
     }
@@ -292,7 +297,7 @@ export default function ThingsPage() {
       )}
 
       {/* Create Thing Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newThing')}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newThing')} isDirty={form.name !== '' || form.macAddress !== ''}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="thing-name"
@@ -300,7 +305,6 @@ export default function ThingsPage() {
             placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
           />
           <TypeSelect
             id="thing-type"
@@ -334,8 +338,8 @@ export default function ThingsPage() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('creating') : tc('create')}
+            <Button type="submit" loading={saving}>
+              {tc('create')}
             </Button>
           </div>
         </form>

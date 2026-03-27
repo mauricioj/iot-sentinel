@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/auth-context';
 import { authService } from '@/services/auth.service';
+import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -14,9 +15,9 @@ export default function LoginPage() {
   const router = useRouter();
   const t = useTranslations('Login');
   const { login, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,14 +32,18 @@ export default function LoginPage() {
     }).catch(() => setLoading(false));
   }, [router, isAuthenticated]);
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setSubmitting(true);
     try {
       await login(username, password);
       router.push('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      toast({ title: err instanceof Error ? err.message : 'Login failed', variant: 'error' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -78,8 +83,7 @@ export default function LoginPage() {
             placeholder="••••••••"
             autoComplete="current-password"
           />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={!username || !password}>
+          <Button type="submit" className="w-full" disabled={!username || !password} loading={submitting}>
             {t('submit')}
           </Button>
         </form>

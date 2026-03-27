@@ -82,6 +82,11 @@
     "deleting": "Excluindo...",
     "delete": "Excluir"
   },
+  "Modal": {
+    "unsavedChanges": "Você tem alterações não salvas. Descartar?",
+    "keepEditing": "Continuar Editando",
+    "discard": "Descartar"
+  },
   "Credentials": {
     "title": "Credenciais",
     "hide": "Ocultar",
@@ -291,7 +296,10 @@
     "deleteThing": "Excluir Dispositivo",
     "deleteThingConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
     "deleteAllDiscovered": "Excluir Todos os Descobertos",
-    "deleteAllDiscoveredConfirm": "Isto removerá todos os dispositivos com status 'descoberto' (encontrados por scan mas não registrados). Esta ação não pode ser desfeita."
+    "deleteAllDiscoveredConfirm": "Isto removerá todos os dispositivos com status 'descoberto' (encontrados por scan mas não registrados). Esta ação não pode ser desfeita.",
+    "thingCreated": "Dispositivo criado com sucesso.",
+    "thingDeleted": "Dispositivo excluído com sucesso.",
+    "discoveredDeleted": "Dispositivos descobertos excluídos com sucesso."
   },
   "ThingDetail": {
     "deepScan": "Scan Profundo",
@@ -345,7 +353,14 @@
     "channelTypeOther": "Outro",
     "channelDescLabel": "Descrição (opcional)",
     "channelDescPlaceholder": "ex: Controla o portão da garagem",
-    "notFound": "Dispositivo não encontrado."
+    "notFound": "Dispositivo não encontrado.",
+    "thingSaved": "Dispositivo salvo com sucesso.",
+    "thingDeleted": "Dispositivo excluído com sucesso.",
+    "channelAdded": "Canal adicionado com sucesso.",
+    "channelRemoved": "Canal removido com sucesso.",
+    "addedToGroup": "Adicionado ao grupo com sucesso.",
+    "removedFromGroup": "Removido do grupo com sucesso.",
+    "deepScanStarted": "Scan profundo iniciado."
   },
   "Groups": {
     "title": "Grupos",

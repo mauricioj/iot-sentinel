@@ -4,6 +4,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { ThingTypesProvider } from '@/contexts/thing-types-context';
+import { ToastProvider } from '@/components/ui/toast';
 
 export const metadata: Metadata = {
   title: 'IoT Sentinel',
@@ -18,9 +19,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className="dark">
       <body>
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>
-            <ThingTypesProvider>{children}</ThingTypesProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <ThingTypesProvider>{children}</ThingTypesProvider>
+            </AuthProvider>
+          </ToastProvider>
         </NextIntlClientProvider>
       </body>
     </html>

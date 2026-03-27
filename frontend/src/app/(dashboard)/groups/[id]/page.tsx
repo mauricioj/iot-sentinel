@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/modal';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { IconPicker, getIconComponent } from '@/components/ui/icon-picker';
@@ -34,6 +35,7 @@ export default function GroupDetailPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
   const fetchGroup = async () => {
     setLoadingGroup(true);
@@ -42,7 +44,7 @@ export default function GroupDetailPage() {
       setGroup(data);
       setEditForm({ name: data.name, icon: data.icon || '', color: data.color || '#6366f1', description: data.description || '' });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingGroup(false);
     }
@@ -54,7 +56,7 @@ export default function GroupDetailPage() {
       const res = await groupsService.getThings(id);
       setThings(res.data);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingThings(false);
     }
@@ -72,9 +74,10 @@ export default function GroupDetailPage() {
     try {
       await groupsService.update(id, editForm);
       setEditOpen(false);
+      toast({ title: t('groupUpdated'), variant: 'success' });
       await fetchGroup();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -84,9 +87,10 @@ export default function GroupDetailPage() {
     setDeleting(true);
     try {
       await groupsService.delete(id);
+      toast({ title: t('groupDeleted'), variant: 'success' });
       router.push('/groups');
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
       setDeleting(false);
     }
   };
@@ -190,14 +194,18 @@ export default function GroupDetailPage() {
       </div>
 
       {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editGroup')}>
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editGroup')} isDirty={
+        editForm.name !== (group?.name ?? '') ||
+        editForm.icon !== (group?.icon ?? '') ||
+        editForm.color !== (group?.color ?? '#6366f1') ||
+        editForm.description !== (group?.description ?? '')
+      }>
         <form onSubmit={handleEdit} className="space-y-4">
           <Input
             id="edit-group-name"
             label={tc('name')}
             value={editForm.name}
             onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-            required
           />
           <IconPicker
             value={editForm.icon}
@@ -231,8 +239,8 @@ export default function GroupDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('saving') : tc('save')}
+            <Button type="submit" loading={saving}>
+              {tc('save')}
             </Button>
           </div>
         </form>

@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useToast } from '@/components/ui/toast';
 import { TypeSelect } from '@/components/ui/type-select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CredentialsReveal } from '@/components/things/credentials-reveal';
@@ -33,6 +34,7 @@ export default function ThingDetailPage() {
   const tSettings = useTranslations('Settings');
   const tTypes = useTranslations('ThingTypes');
   const tStatus = useTranslations('Status');
+  const { toast } = useToast();
 
   const [thing, setThing] = useState<Thing | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -77,7 +79,7 @@ export default function ThingDetailPage() {
         credentials: data.credentials || { username: '', password: '', notes: '' },
       });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -85,8 +87,8 @@ export default function ThingDetailPage() {
 
   useEffect(() => {
     fetchThing();
-    networksService.findAll(1, 100).then((r) => setNetworks(r.data)).catch(console.error);
-    groupsService.findAll(1, 100).then((r) => setAllGroups(r.data)).catch(console.error);
+    networksService.findAll(1, 100).then((r) => setNetworks(r.data)).catch((err) => toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' }));
+    groupsService.findAll(1, 100).then((r) => setAllGroups(r.data)).catch((err) => toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' }));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -96,9 +98,10 @@ export default function ThingDetailPage() {
     try {
       await thingsService.update(id, editForm);
       setEditOpen(false);
+      toast({ title: t('thingSaved'), variant: 'success' });
       await fetchThing();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -108,9 +111,10 @@ export default function ThingDetailPage() {
     setDeleting(true);
     try {
       await thingsService.delete(id);
+      toast({ title: t('thingDeleted'), variant: 'success' });
       router.push('/things');
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
       setDeleting(false);
     }
   };
@@ -124,9 +128,10 @@ export default function ThingDetailPage() {
       await thingsService.update(id, { channels: [...existingChannels, newChannel] } as any);
       setChannelModalOpen(false);
       setChannelForm({ number: existingChannels.length + 2, direction: 'output', name: '', type: 'other', description: '' });
+      toast({ title: t('channelAdded'), variant: 'success' });
       await fetchThing();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSavingChannel(false);
     }
@@ -136,9 +141,10 @@ export default function ThingDetailPage() {
     try {
       const updatedChannels = (thing?.channels || []).filter((_, i) => i !== index);
       await thingsService.update(id, { channels: updatedChannels } as any);
+      toast({ title: t('channelRemoved'), variant: 'success' });
       await fetchThing();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     }
   };
 
@@ -149,9 +155,10 @@ export default function ThingDetailPage() {
     try {
       await thingsService.update(id, { groupIds: [...current, groupId] } as any);
       setAddGroupOpen(false);
+      toast({ title: t('addedToGroup'), variant: 'success' });
       await fetchThing();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     }
   };
 
@@ -160,9 +167,10 @@ export default function ThingDetailPage() {
     const updated = (thing.groupIds || []).filter((gid) => gid !== groupId);
     try {
       await thingsService.update(id, { groupIds: updated } as any);
+      toast({ title: t('removedFromGroup'), variant: 'success' });
       await fetchThing();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     }
   };
 
@@ -188,8 +196,9 @@ export default function ThingDetailPage() {
     setScanning(true);
     try {
       await scannerService.discover(thing.networkId, 'deep_scan');
+      toast({ title: t('deepScanStarted'), variant: 'success' });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setScanning(false);
     }
@@ -208,8 +217,8 @@ export default function ThingDetailPage() {
         </Button>
         <h1 className="text-2xl font-bold flex-1">{thing.name}</h1>
         {thingTypeData?.capabilities.enablePortScan && (
-          <Button variant="secondary" size="sm" onClick={handleDeepScan} disabled={scanning}>
-            {scanning ? t('scanning') : <><Search className="h-4 w-4 mr-1" /> {t('deepScan')}</>}
+          <Button variant="secondary" size="sm" onClick={handleDeepScan} loading={scanning}>
+            <Search className="h-4 w-4 mr-1" /> {t('deepScan')}
           </Button>
         )}
         <Button variant="secondary" size="sm" onClick={() => { setEditTab('general'); setEditOpen(true); }}>
@@ -479,7 +488,7 @@ export default function ThingDetailPage() {
       )}
 
       {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editThing')}>
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={t('editThing')} isDirty={thing ? (editForm.name !== thing.name || editForm.type !== thing.type || editForm.networkId !== thing.networkId || editForm.macAddress !== thing.macAddress || editForm.ipAddress !== thing.ipAddress || editForm.vendor !== (thing.vendor || '') || editForm.os !== (thing.os || '') || editForm.description !== (thing.description || '')) : false}>
         <form onSubmit={handleEdit} className="space-y-4">
           <div className="flex gap-1 border-b border-border mb-4">
             {(['general', 'connectivity', 'credentials'] as const).map((tab) => {
@@ -499,7 +508,6 @@ export default function ThingDetailPage() {
                 label={tc('name')}
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                required
               />
               <TypeSelect
                 id="edit-type"
@@ -580,8 +588,8 @@ export default function ThingDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('saving') : tc('save')}
+            <Button type="submit" loading={saving}>
+              {tc('save')}
             </Button>
           </div>
         </form>
@@ -597,7 +605,7 @@ export default function ThingDetailPage() {
       />
 
       {/* Add Channel Modal */}
-      <Modal open={channelModalOpen} onClose={() => setChannelModalOpen(false)} title={t('addChannelTitle')}>
+      <Modal open={channelModalOpen} onClose={() => setChannelModalOpen(false)} title={t('addChannelTitle')} isDirty={channelForm.name !== ''}>
         <form onSubmit={handleAddChannel} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
@@ -606,7 +614,6 @@ export default function ThingDetailPage() {
               type="number"
               value={String(channelForm.number)}
               onChange={(e) => setChannelForm({ ...channelForm, number: Number(e.target.value) })}
-              required
             />
             <Select
               id="ch-direction"
@@ -626,7 +633,6 @@ export default function ThingDetailPage() {
             placeholder={t('channelNamePlaceholder')}
             value={channelForm.name}
             onChange={(e) => setChannelForm({ ...channelForm, name: e.target.value })}
-            required
           />
           <Select
             id="ch-type"
@@ -654,8 +660,8 @@ export default function ThingDetailPage() {
             <Button type="button" variant="secondary" onClick={() => setChannelModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={savingChannel}>
-              {savingChannel ? tc('adding') : t('addChannel')}
+            <Button type="submit" loading={savingChannel}>
+              {t('addChannel')}
             </Button>
           </div>
         </form>

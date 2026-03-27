@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/toast';
 import { IconPicker, getIconComponent } from '@/components/ui/icon-picker';
 import { groupsService } from '@/services/groups.service';
 import { Group } from '@/types';
@@ -24,6 +25,7 @@ export default function GroupsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ name: '', icon: '', color: '#6366f1', description: '' });
+  const { toast } = useToast();
 
   const fetchGroups = async () => {
     setLoading(true);
@@ -31,7 +33,7 @@ export default function GroupsPage() {
       const res = await groupsService.findAll(1, 100);
       setGroups(res.data);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -48,9 +50,10 @@ export default function GroupsPage() {
       await groupsService.create(form);
       setModalOpen(false);
       setForm({ name: '', icon: '', color: '#6366f1', description: '' });
+      toast({ title: t('groupCreated'), variant: 'success' });
       await fetchGroups();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -62,9 +65,10 @@ export default function GroupsPage() {
     try {
       await groupsService.delete(deleteTarget._id);
       setDeleteTarget(null);
+      toast({ title: t('groupDeleted'), variant: 'success' });
       await fetchGroups();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -130,7 +134,7 @@ export default function GroupsPage() {
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newGroup')}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newGroup')} isDirty={form.name.trim().length > 0}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="group-name"
@@ -138,7 +142,6 @@ export default function GroupsPage() {
             placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
           />
           <IconPicker
             value={form.icon}
@@ -173,8 +176,8 @@ export default function GroupsPage() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('creating') : tc('create')}
+            <Button type="submit" loading={saving}>
+              {tc('create')}
             </Button>
           </div>
         </form>

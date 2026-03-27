@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -34,6 +35,7 @@ function formatDate(dateStr: string | null | undefined) {
 export default function ScannerPage() {
   const t = useTranslations('Scanner');
   const tc = useTranslations('Common');
+  const { toast } = useToast();
 
   const SCAN_TYPES = [
     { value: 'discovery', label: t('typeDiscovery') },
@@ -45,7 +47,6 @@ export default function ScannerPage() {
   const [networkId, setNetworkId] = useState('');
   const [scanType, setScanType] = useState('discovery');
   const [scanning, setScanning] = useState(false);
-  const [scanMessage, setScanMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [jobs, setJobs] = useState<ScanJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -57,7 +58,7 @@ export default function ScannerPage() {
     networksService.findAll(1, 100).then((r) => {
       setNetworks(r.data);
       if (r.data.length > 0) setNetworkId(r.data[0]._id);
-    }).catch(console.error);
+    }).catch(() => toast({ title: t('scanFailed'), variant: 'error' }));
   }, []);
 
   const fetchJobs = async () => {
@@ -65,8 +66,8 @@ export default function ScannerPage() {
       const res = await scannerService.findAll(pagination.page, pagination.limit);
       setJobs(res.data);
       pagination.setTotal(res.meta.total);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast({ title: t('scanFailed'), variant: 'error' });
     } finally {
       setLoadingJobs(false);
     }
@@ -106,18 +107,17 @@ export default function ScannerPage() {
 
   const handleStartScan = async () => {
     if (!networkId) {
-      setScanMessage({ type: 'error', text: t('selectNetworkError') });
+      toast({ title: t('selectNetworkError'), variant: 'error' });
       return;
     }
     setScanning(true);
-    setScanMessage(null);
     try {
       await scannerService.discover(networkId, scanType);
-      setScanMessage({ type: 'success', text: t('scanQueued') });
+      toast({ title: t('scanQueued') });
       setLoadingJobs(true);
       await fetchJobs();
     } catch (err) {
-      setScanMessage({ type: 'error', text: err instanceof Error ? err.message : t('scanFailed') });
+      toast({ title: err instanceof Error ? err.message : t('scanFailed'), variant: 'error' });
     } finally {
       setScanning(false);
     }
@@ -221,16 +221,11 @@ export default function ScannerPage() {
                 onChange={(e) => setScanType(e.target.value)}
               />
             </div>
-            <Button onClick={handleStartScan} disabled={scanning || !networkId}>
+            <Button onClick={handleStartScan} disabled={!networkId} loading={scanning}>
               <Scan className="h-4 w-4 mr-2" />
-              {scanning ? t('starting') : t('startScan')}
+              {t('startScan')}
             </Button>
           </div>
-          {scanMessage && (
-            <p className={`mt-3 text-sm ${scanMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
-              {scanMessage.text}
-            </p>
-          )}
         </CardContent>
       </Card>
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { authService } from '@/services/auth.service';
+import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -28,9 +29,9 @@ export default function SetupPage() {
   const router = useRouter();
   const t = useTranslations('Setup');
   const tc = useTranslations('Common');
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   // Step 1: Instance config
   const [language, setLanguage] = useState('pt-BR');
@@ -61,11 +62,10 @@ export default function SetupPage() {
 
   const handleComplete = async () => {
     if (adminPassword !== confirmPassword) {
-      setError(t('passwordsMismatch'));
+      toast({ title: t('passwordsMismatch'), variant: 'error' });
       return;
     }
     setLoading(true);
-    setError('');
     try {
       await authService.completeSetup({
         language,
@@ -76,7 +76,7 @@ export default function SetupPage() {
       });
       router.push('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Setup failed');
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,6 @@ export default function SetupPage() {
   const handleRestore = async () => {
     if (!backupFile) return;
     setLoading(true);
-    setError('');
     try {
       const formData = new FormData();
       formData.append('file', backupFile);
@@ -105,7 +104,7 @@ export default function SetupPage() {
       const counts = Object.entries(result.imported).map(([k, v]) => `${k}: ${v}`).join(', ');
       setRestoreResult(counts);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Restore failed');
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -270,17 +269,17 @@ export default function SetupPage() {
               value={backupPassword}
               onChange={(e) => setBackupPassword(e.target.value)}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={() => { setStep(2); setError(''); }}>
+              <Button variant="secondary" className="flex-1" onClick={() => setStep(2)}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
               </Button>
               <Button
                 className="flex-1"
                 onClick={handleRestore}
-                disabled={loading || !backupFile || !backupPassword}
+                disabled={!backupFile || !backupPassword}
+                loading={loading}
               >
-                {loading ? t('restoring') : <><Upload className="mr-2 h-4 w-4" /> {t('restore')}</>}
+                <Upload className="mr-2 h-4 w-4" /> {t('restore')}
               </Button>
             </div>
           </div>
@@ -329,13 +328,12 @@ export default function SetupPage() {
                 <span>{adminUsername}</span>
               </div>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => setStep(3)}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> {tc('back')}
               </Button>
-              <Button className="flex-1" onClick={handleComplete} disabled={loading}>
-                {loading ? t('settingUp') : <><Check className="mr-2 h-4 w-4" /> {t('complete')}</>}
+              <Button className="flex-1" onClick={handleComplete} loading={loading}>
+                <Check className="mr-2 h-4 w-4" /> {t('complete')}
               </Button>
             </div>
           </div>

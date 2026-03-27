@@ -6,6 +6,7 @@ import { Bell, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -30,6 +31,7 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
 export default function NotificationsPage() {
   const t = useTranslations('Notifications');
   const tc = useTranslations('Common');
+  const { toast } = useToast();
 
   const CONDITIONS = [
     { value: 'status_change', label: t('conditionStatusChange'), targetTypes: ['thing', 'group'], needsThreshold: false },
@@ -71,7 +73,7 @@ export default function NotificationsPage() {
       setNotifications(res.data);
       notifPagination.setTotal(res.meta.total);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingNotifs(false);
     }
@@ -84,7 +86,7 @@ export default function NotificationsPage() {
       setRules(res.data);
       rulesPagination.setTotal(res.meta.total);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingRules(false);
     }
@@ -142,7 +144,7 @@ export default function NotificationsPage() {
         }
         setTargetOptions(options);
       } catch (err) {
-        console.error(err);
+        toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
       } finally {
         setLoadingTargets(false);
       }
@@ -160,7 +162,7 @@ export default function NotificationsPage() {
         prev.map((n) => (n._id === id ? { ...n, read: true } : n))
       );
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     }
   };
 
@@ -168,8 +170,9 @@ export default function NotificationsPage() {
     try {
       await notificationsService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      toast({ title: t('markAllReadSuccess'), variant: 'success' });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     }
   };
 
@@ -179,8 +182,10 @@ export default function NotificationsPage() {
     try {
       if (editingRule) {
         await notificationsService.updateRule(editingRule._id, ruleForm);
+        toast({ title: t('ruleUpdated'), variant: 'success' });
       } else {
         await notificationsService.createRule(ruleForm);
+        toast({ title: t('ruleCreated'), variant: 'success' });
       }
       setRuleModalOpen(false);
       setEditingRule(null);
@@ -195,7 +200,7 @@ export default function NotificationsPage() {
       });
       await fetchRules();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSavingRule(false);
     }
@@ -235,9 +240,10 @@ export default function NotificationsPage() {
     try {
       await notificationsService.deleteRule(deleteTarget._id);
       setDeleteTarget(null);
+      toast({ title: t('ruleDeleted'), variant: 'success' });
       await fetchRules();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -471,7 +477,7 @@ export default function NotificationsPage() {
       )}
 
       {/* Create Rule Modal */}
-      <Modal open={ruleModalOpen} onClose={() => { setRuleModalOpen(false); setEditingRule(null); }} title={editingRule ? t('editRuleTitle') : t('newRuleTitle')}>
+      <Modal open={ruleModalOpen} onClose={() => { setRuleModalOpen(false); setEditingRule(null); }} title={editingRule ? t('editRuleTitle') : t('newRuleTitle')} isDirty={ruleForm.name.trim().length > 0}>
         <form onSubmit={handleSaveRule} className="space-y-4">
           <Input
             id="rule-name"
@@ -479,7 +485,6 @@ export default function NotificationsPage() {
             placeholder={t('ruleNamePlaceholder')}
             value={ruleForm.name}
             onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })}
-            required
           />
 
           <div className="space-y-1">
@@ -536,7 +541,6 @@ export default function NotificationsPage() {
                   value={ruleForm.targetId}
                   onChange={(e) => setRuleForm({ ...ruleForm, targetId: e.target.value })}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  required={ruleForm.condition !== 'new_discovery'}
                   disabled={loadingTargets}
                 >
                   <option value="">
@@ -591,8 +595,8 @@ export default function NotificationsPage() {
             <Button type="button" variant="secondary" onClick={() => { setRuleModalOpen(false); setEditingRule(null); }}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={savingRule}>
-              {savingRule ? tc('saving') : editingRule ? t('saveChanges') : tc('create')}
+            <Button type="submit" loading={savingRule}>
+              {editingRule ? t('saveChanges') : tc('create')}
             </Button>
           </div>
         </form>

@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useToast } from '@/components/ui/toast';
 import { api } from '@/services/api';
 import { backupService } from '@/services/backup.service';
 import { thingTypesService } from '@/services/thing-types.service';
@@ -65,11 +66,11 @@ export default function SettingsPage() {
   const tc = useTranslations('Common');
   const tTypes = useTranslations('ThingTypes');
   const router = useRouter();
+  const { toast } = useToast();
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -84,13 +85,11 @@ export default function SettingsPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [exportPassword, setExportPassword] = useState('');
   const [exporting, setExporting] = useState(false);
-  const [exportMessage, setExportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [restorePassword, setRestorePassword] = useState('');
   const [restoring, setRestoring] = useState(false);
-  const [restoreMessage, setRestoreMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'general' | 'thing-types' | 'users' | 'backup'>('general');
@@ -126,7 +125,7 @@ export default function SettingsPage() {
         statusCheckInterval: data.monitor?.statusCheckInterval ?? 300,
       });
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingSettings(false);
     }
@@ -137,7 +136,7 @@ export default function SettingsPage() {
       const res = await api<{ data: User[]; meta: Record<string, number> }>('/api/v1/users');
       setUsers(res.data);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoadingUsers(false);
     }
@@ -150,7 +149,6 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     setSaving(true);
-    setSaveMessage(null);
     try {
       await api('/api/v1/settings', {
         method: 'PATCH',
@@ -169,12 +167,9 @@ export default function SettingsPage() {
       });
       document.cookie = `locale=${settings.language};path=/;max-age=31536000`;
       router.refresh();
-      setSaveMessage({ type: 'success', text: t('settingsSaved') });
+      toast({ title: t('settingsSaved') });
     } catch (err) {
-      setSaveMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : t('settingsSaveFailed'),
-      });
+      toast({ title: err instanceof Error ? err.message : t('settingsSaveFailed'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -192,7 +187,7 @@ export default function SettingsPage() {
       setUserForm({ username: '', password: '', role: 'viewer' });
       await fetchUsers();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setAddingUser(false);
     }
@@ -206,7 +201,7 @@ export default function SettingsPage() {
       setDeleteTarget(null);
       await fetchUsers();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -215,7 +210,6 @@ export default function SettingsPage() {
   const handleExport = async (e: React.FormEvent) => {
     e.preventDefault();
     setExporting(true);
-    setExportMessage(null);
     try {
       const blob = await backupService.exportBackup(exportPassword);
       const filename = `iot-sentinel-backup-${new Date().toISOString().split('T')[0]}.json.gz`;
@@ -225,10 +219,10 @@ export default function SettingsPage() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      setExportMessage({ type: 'success', text: `Backup exported: ${filename}` });
+      toast({ title: `Backup exported: ${filename}` });
       setExportPassword('');
     } catch (err) {
-      setExportMessage({ type: 'error', text: err instanceof Error ? err.message : 'Export failed' });
+      toast({ title: err instanceof Error ? err.message : 'Export failed', variant: 'error' });
     } finally {
       setExporting(false);
     }
@@ -238,17 +232,16 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!restoreFile) return;
     setRestoring(true);
-    setRestoreMessage(null);
     try {
       const result = await backupService.restore(restoreFile, restorePassword);
       const counts = Object.entries(result.imported).map(([k, v]) => `${k}: ${v}`).join(', ');
-      setRestoreMessage({ type: 'success', text: `Restored successfully. ${counts}` });
+      toast({ title: `Restored successfully. ${counts}` });
       setRestoreFile(null);
       setRestorePassword('');
       fetchSettings();
       fetchUsers();
     } catch (err) {
-      setRestoreMessage({ type: 'error', text: err instanceof Error ? err.message : 'Restore failed' });
+      toast({ title: err instanceof Error ? err.message : 'Restore failed', variant: 'error' });
     } finally {
       setRestoring(false);
     }
@@ -297,7 +290,7 @@ export default function SettingsPage() {
       setTypeModalOpen(false);
       await refreshTypes();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSavingType(false);
     }
@@ -311,7 +304,7 @@ export default function SettingsPage() {
       setDeleteTypeTarget(null);
       await refreshTypes();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeletingType(false);
     }
@@ -526,14 +519,9 @@ export default function SettingsPage() {
           </Card>
 
           <div className="flex items-center gap-4">
-            <Button onClick={handleSaveSettings} disabled={saving}>
-              {saving ? tc('saving') : t('saveSettings')}
+            <Button onClick={handleSaveSettings} loading={saving}>
+              {t('saveSettings')}
             </Button>
-            {saveMessage && (
-              <p className={`text-sm ${saveMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
-                {saveMessage.text}
-              </p>
-            )}
           </div>
         </>
       )}
@@ -591,11 +579,11 @@ export default function SettingsPage() {
               {t('backupDesc')}
             </p>
             <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => { setExportOpen(true); setExportMessage(null); }}>
+              <Button variant="secondary" onClick={() => setExportOpen(true)}>
                 <Download className="h-4 w-4 mr-2" />
                 {t('exportBackup')}
               </Button>
-              <Button variant="secondary" onClick={() => { setRestoreOpen(true); setRestoreMessage(null); }}>
+              <Button variant="secondary" onClick={() => setRestoreOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 {t('restoreBackup')}
               </Button>
@@ -605,7 +593,7 @@ export default function SettingsPage() {
       )}
 
       {/* Add User Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('addUser')}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('addUser')} isDirty={userForm.username !== '' || userForm.password !== ''}>
         <form onSubmit={handleAddUser} className="space-y-4">
           <Input
             id="user-username"
@@ -613,7 +601,6 @@ export default function SettingsPage() {
             placeholder={t('usernamePlaceholder')}
             value={userForm.username}
             onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-            required
           />
           <Input
             id="user-password"
@@ -622,7 +609,6 @@ export default function SettingsPage() {
             placeholder="••••••••"
             value={userForm.password}
             onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-            required
           />
           <Select
             id="user-role"
@@ -635,8 +621,8 @@ export default function SettingsPage() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={addingUser}>
-              {addingUser ? tc('adding') : t('addUser')}
+            <Button type="submit" loading={addingUser}>
+              {t('addUser')}
             </Button>
           </div>
         </form>
@@ -652,7 +638,7 @@ export default function SettingsPage() {
       />
 
       {/* Export Backup Modal */}
-      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title={t('exportTitle')}>
+      <Modal open={exportOpen} onClose={() => setExportOpen(false)} title={t('exportTitle')} isDirty={exportPassword !== ''}>
         <form onSubmit={handleExport} className="space-y-4">
           <p className="text-sm text-muted-foreground">
             {t('exportDesc')}
@@ -664,26 +650,20 @@ export default function SettingsPage() {
             placeholder={t('exportPasswordPlaceholder')}
             value={exportPassword}
             onChange={(e) => setExportPassword(e.target.value)}
-            required
           />
-          {exportMessage && (
-            <p className={`text-sm ${exportMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
-              {exportMessage.text}
-            </p>
-          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setExportOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={exporting || !exportPassword}>
-              {exporting ? t('exporting') : t('export')}
+            <Button type="submit" loading={exporting} disabled={!exportPassword}>
+              {t('export')}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Restore Backup Modal */}
-      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title={t('restoreTitle')}>
+      <Modal open={restoreOpen} onClose={() => setRestoreOpen(false)} title={t('restoreTitle')} isDirty={restorePassword !== '' || restoreFile !== null}>
         <form onSubmit={handleRestore} className="space-y-4">
           <p className="text-sm text-muted-foreground">
             {t('restoreDesc')}
@@ -696,7 +676,6 @@ export default function SettingsPage() {
               accept=".gz,.json.gz"
               onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
               className="block w-full text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
-              required
             />
           </div>
           <Input
@@ -706,19 +685,13 @@ export default function SettingsPage() {
             placeholder={t('restorePasswordPlaceholder')}
             value={restorePassword}
             onChange={(e) => setRestorePassword(e.target.value)}
-            required
           />
-          {restoreMessage && (
-            <p className={`text-sm ${restoreMessage.type === 'success' ? 'text-success' : 'text-destructive'}`}>
-              {restoreMessage.text}
-            </p>
-          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setRestoreOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={restoring || !restoreFile || !restorePassword}>
-              {restoring ? t('restoring') : t('restoreBackup')}
+            <Button type="submit" loading={restoring} disabled={!restoreFile || !restorePassword}>
+              {t('restoreBackup')}
             </Button>
           </div>
         </form>
@@ -729,6 +702,7 @@ export default function SettingsPage() {
         open={typeModalOpen}
         onClose={() => setTypeModalOpen(false)}
         title={editingType ? t('editThingType') : t('createThingType')}
+        isDirty={typeForm.name !== ''}
       >
         <form onSubmit={handleCreateOrUpdateType} className="space-y-4">
           <Input
@@ -737,7 +711,6 @@ export default function SettingsPage() {
             placeholder={t('typeNamePlaceholder')}
             value={typeForm.name}
             onChange={(e) => handleTypeNameChange(e.target.value)}
-            required
             disabled={!!editingType?.isSystem}
           />
           <Input
@@ -746,7 +719,6 @@ export default function SettingsPage() {
             placeholder={t('typeSlugPlaceholder')}
             value={typeForm.slug}
             onChange={(e) => setTypeForm({ ...typeForm, slug: e.target.value })}
-            required
             disabled={!!editingType?.isSystem}
           />
           <IconPicker
@@ -814,8 +786,8 @@ export default function SettingsPage() {
             <Button type="button" variant="secondary" onClick={() => setTypeModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={savingType}>
-              {savingType ? tc('saving') : editingType ? tc('update') : tc('create')}
+            <Button type="submit" loading={savingType}>
+              {editingType ? tc('update') : tc('create')}
             </Button>
           </div>
         </form>

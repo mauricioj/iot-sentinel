@@ -7,6 +7,7 @@ import { Plus, MapPin, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
 import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -18,6 +19,7 @@ export default function LocalsPage() {
   const router = useRouter();
   const t = useTranslations('Locals');
   const tc = useTranslations('Common');
+  const { toast } = useToast();
   const [locals, setLocals] = useState<Local[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -34,7 +36,7 @@ export default function LocalsPage() {
       setLocals(res.data);
       pagination.setTotal(res.meta.total);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -50,11 +52,12 @@ export default function LocalsPage() {
     setSaving(true);
     try {
       const created = await localsService.create(form);
+      toast({ title: t('createSuccess'), variant: 'success' });
       setModalOpen(false);
       setForm({ name: '', description: '', address: '' });
       router.push(`/locals/${created._id}`);
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setSaving(false);
     }
@@ -65,10 +68,11 @@ export default function LocalsPage() {
     setDeleting(true);
     try {
       await localsService.delete(deleteTarget._id);
+      toast({ title: t('deleteSuccess'), variant: 'success' });
       setDeleteTarget(null);
       await fetchLocals();
     } catch (err) {
-      console.error(err);
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
     } finally {
       setDeleting(false);
     }
@@ -142,7 +146,7 @@ export default function LocalsPage() {
         </>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newLocal')}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newLocal')} isDirty={!!(form.name || form.description || form.address)}>
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
             id="name"
@@ -150,7 +154,6 @@ export default function LocalsPage() {
             placeholder={t('namePlaceholder')}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
           />
           <Input
             id="description"
@@ -170,8 +173,8 @@ export default function LocalsPage() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               {tc('cancel')}
             </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? tc('creating') : tc('create')}
+            <Button type="submit" loading={saving}>
+              {tc('create')}
             </Button>
           </div>
         </form>
