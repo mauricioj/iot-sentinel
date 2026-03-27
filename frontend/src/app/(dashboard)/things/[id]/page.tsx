@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { TypeSelect } from '@/components/ui/type-select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CredentialsReveal } from '@/components/things/credentials-reveal';
 import { StatusHistoryCard } from '@/components/things/status-history-card';
@@ -30,6 +31,8 @@ export default function ThingDetailPage() {
   const tc = useTranslations('Common');
   const tThings = useTranslations('Things');
   const tSettings = useTranslations('Settings');
+  const tTypes = useTranslations('ThingTypes');
+  const tStatus = useTranslations('Status');
 
   const [thing, setThing] = useState<Thing | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -231,11 +234,11 @@ export default function ThingDetailPage() {
           </div>
           <div>
             <p className="text-muted-foreground">{tc('type')}</p>
-            <p className="font-medium mt-1">{thing.type || '-'}</p>
+            <p className="font-medium mt-1">{thingTypeData ? (thingTypeData.isSystem && tTypes.has(thingTypeData.slug) ? tTypes(thingTypeData.slug as never) : thingTypeData.name) : (thing.type || '-')}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t('registration')}</p>
-            <p className="font-medium mt-1 capitalize">{thing.registrationStatus || '-'}</p>
+            <p className="font-medium mt-1">{tStatus.has(thing.registrationStatus as never) ? tStatus(thing.registrationStatus as never) : thing.registrationStatus || '-'}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t('health')}</p>
@@ -498,12 +501,11 @@ export default function ThingDetailPage() {
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                 required
               />
-              <Select
+              <TypeSelect
                 id="edit-type"
                 label={tc('type')}
-                options={typeOptions}
                 value={editForm.type}
-                onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                onChange={(value) => setEditForm({ ...editForm, type: value })}
               />
               <Input
                 id="edit-vendor"

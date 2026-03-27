@@ -12,6 +12,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { TypeSelect } from '@/components/ui/type-select';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { thingsService } from '@/services/things.service';
 import { networksService } from '@/services/networks.service';
@@ -301,12 +302,12 @@ export default function ThingsPage() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
-          <Select
+          <TypeSelect
             id="thing-type"
             label={tc('type')}
-            options={typeOptions}
+            placeholder={t('selectType')}
             value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
+            onChange={(value) => setForm({ ...form, type: value })}
           />
           <Select
             id="thing-network"

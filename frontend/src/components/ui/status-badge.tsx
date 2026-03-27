@@ -1,21 +1,26 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { Badge } from './badge';
 import { Wifi, WifiOff, HelpCircle, Search } from 'lucide-react';
 
-const healthConfig: Record<string, { variant: 'success' | 'destructive' | 'warning'; icon: typeof Wifi; label: string }> = {
-  online: { variant: 'success', icon: Wifi, label: 'Online' },
-  offline: { variant: 'destructive', icon: WifiOff, label: 'Offline' },
-  unknown: { variant: 'warning', icon: HelpCircle, label: 'Unknown' },
+const healthConfig: Record<string, { variant: 'success' | 'destructive' | 'warning'; icon: typeof Wifi; key: string }> = {
+  online: { variant: 'success', icon: Wifi, key: 'online' },
+  offline: { variant: 'destructive', icon: WifiOff, key: 'offline' },
+  unknown: { variant: 'warning', icon: HelpCircle, key: 'unknown' },
 };
 
 export function StatusBadge({ registrationStatus, healthStatus }: {
   registrationStatus: string;
   healthStatus: string;
 }) {
+  const t = useTranslations('Status');
+
   if (registrationStatus === 'discovered') {
     return (
       <Badge variant="secondary" className="gap-1">
         <Search className="h-3 w-3" />
-        Discovered
+        {t('discovered')}
       </Badge>
     );
   }
@@ -25,7 +30,7 @@ export function StatusBadge({ registrationStatus, healthStatus }: {
   return (
     <Badge variant={config.variant} className="gap-1">
       <Icon className="h-3 w-3" />
-      {config.label}
+      {t(config.key as 'online' | 'offline' | 'unknown')}
     </Badge>
   );
 }

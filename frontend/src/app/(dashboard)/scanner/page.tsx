@@ -128,12 +128,31 @@ export default function ScannerPage() {
     ...networks.map((n) => ({ value: n._id, label: n.name })),
   ];
 
+  const scanTypeMap: Record<string, string> = {
+    discovery: t('typeDiscovery'),
+    status_check: t('typeStatusCheck'),
+    deep_scan: t('typeDeepScan'),
+  };
+
+  const jobStatusMap: Record<string, string> = {
+    queued: t('jobStatusQueued'),
+    running: t('jobStatusRunning'),
+    completed: t('jobStatusCompleted'),
+    failed: t('jobStatusFailed'),
+  };
+
+  const triggeredByMap: Record<string, string> = {
+    user: t('triggeredByUser'),
+    scheduler: t('triggeredByScheduler'),
+    system: t('triggeredBySystem'),
+  };
+
   const columns = [
     {
       key: 'type',
       header: tc('type'),
       render: (item: ScanJob) => (
-        <span className="capitalize">{item.type.replace('_', ' ')}</span>
+        <span>{scanTypeMap[item.type] || item.type}</span>
       ),
     },
     {
@@ -141,7 +160,7 @@ export default function ScannerPage() {
       header: tc('status'),
       render: (item: ScanJob) => (
         <Badge variant={statusVariant(item.status)}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {jobStatusMap[item.status] || item.status}
         </Badge>
       ),
     },
@@ -149,7 +168,7 @@ export default function ScannerPage() {
       key: 'triggeredBy',
       header: t('triggeredBy'),
       render: (item: ScanJob) => (
-        <span className="capitalize">{item.triggeredBy}</span>
+        <span>{triggeredByMap[item.triggeredBy] || item.triggeredBy}</span>
       ),
     },
     {
@@ -168,7 +187,7 @@ export default function ScannerPage() {
       render: (item: ScanJob) => {
         const count = Array.isArray(item.results) ? item.results.length : 0;
         if (item.status !== 'completed') return '-';
-        return `${count} host${count !== 1 ? 's' : ''} found`;
+        return t('hostsFound', { count });
       },
     },
   ];

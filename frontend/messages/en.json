@@ -31,6 +31,33 @@
     "no": "No",
     "optional": "(optional)"
   },
+  "Status": {
+    "discovered": "Discovered",
+    "registered": "Registered",
+    "online": "Online",
+    "offline": "Offline",
+    "unknown": "Unknown"
+  },
+  "ThingTypes": {
+    "router": "Router",
+    "switch": "Switch",
+    "access-point": "Access Point",
+    "firewall": "Firewall",
+    "server": "Server",
+    "workstation": "Workstation",
+    "vm": "VM",
+    "nas": "NAS",
+    "nvr": "NVR",
+    "camera": "Camera",
+    "printer": "Printer",
+    "smart-tv": "Smart TV",
+    "sensor": "Sensor",
+    "plc": "PLC",
+    "hmi": "HMI",
+    "gateway": "Gateway",
+    "service": "Service",
+    "other": "Other"
+  },
   "Sidebar": {
     "title": "IoT Sentinel",
     "dashboard": "Dashboard",
@@ -413,6 +440,14 @@
     "triggeredBy": "Triggered By",
     "started": "Started",
     "completed": "Completed",
-    "results": "Results"
+    "results": "Results",
+    "hostsFound": "{count, plural, =0 {0 hosts found} =1 {1 host found} other {# hosts found}}",
+    "jobStatusQueued": "Queued",
+    "jobStatusRunning": "Running",
+    "jobStatusCompleted": "Completed",
+    "jobStatusFailed": "Failed",
+    "triggeredByUser": "User",
+    "triggeredByScheduler": "Scheduler",
+    "triggeredBySystem": "System"
   }
 }

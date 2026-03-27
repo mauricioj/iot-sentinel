@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 export default function SettingsPage() {
   const t = useTranslations('Settings');
   const tc = useTranslations('Common');
+  const tTypes = useTranslations('ThingTypes');
   const router = useRouter();
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -329,12 +330,15 @@ export default function SettingsPage() {
     {
       key: 'name',
       header: tc('name'),
-      render: (item: ThingTypeItem) => (
-        <span className="flex items-center gap-2">
-          {item.name}
-          {item.isSystem && <Badge variant="secondary">{t('system')}</Badge>}
-        </span>
-      ),
+      render: (item: ThingTypeItem) => {
+        const displayName = item.isSystem && tTypes.has(item.slug) ? tTypes(item.slug as never) : item.name;
+        return (
+          <span className="flex items-center gap-2">
+            {displayName}
+            {item.isSystem && <Badge variant="secondary">{t('system')}</Badge>}
+          </span>
+        );
+      },
     },
     {
       key: 'capabilities',
@@ -734,6 +738,7 @@ export default function SettingsPage() {
             value={typeForm.name}
             onChange={(e) => handleTypeNameChange(e.target.value)}
             required
+            disabled={!!editingType?.isSystem}
           />
           <Input
             id="type-slug"
@@ -742,6 +747,7 @@ export default function SettingsPage() {
             value={typeForm.slug}
             onChange={(e) => setTypeForm({ ...typeForm, slug: e.target.value })}
             required
+            disabled={!!editingType?.isSystem}
           />
           <IconPicker
             value={typeForm.icon}
