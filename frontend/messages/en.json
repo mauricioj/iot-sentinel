@@ -389,7 +389,14 @@
     "editGroup": "Edit Group",
     "deleteGroup": "Delete Group",
     "deleteGroupConfirm": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
-    "notFound": "Group not found."
+    "notFound": "Group not found.",
+    "assignThings": "Assign Things",
+    "searchThings": "Search things...",
+    "noAvailableThings": "No available things to assign.",
+    "selectedCount": "{count} selected",
+    "thingsAssigned": "Things assigned successfully.",
+    "groupUpdated": "Group updated successfully.",
+    "groupDeleted": "Group deleted successfully."
   },
   "Map": {
     "title": "Network Map",

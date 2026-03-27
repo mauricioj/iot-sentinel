@@ -389,7 +389,14 @@
     "editGroup": "Editar Grupo",
     "deleteGroup": "Excluir Grupo",
     "deleteGroupConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
-    "notFound": "Grupo não encontrado."
+    "notFound": "Grupo não encontrado.",
+    "assignThings": "Associar Dispositivos",
+    "searchThings": "Buscar dispositivos...",
+    "noAvailableThings": "Nenhum dispositivo disponível para associar.",
+    "selectedCount": "{count} selecionados",
+    "thingsAssigned": "Dispositivos associados com sucesso.",
+    "groupUpdated": "Grupo atualizado com sucesso.",
+    "groupDeleted": "Grupo excluído com sucesso."
   },
   "Map": {
     "title": "Mapa de Rede",

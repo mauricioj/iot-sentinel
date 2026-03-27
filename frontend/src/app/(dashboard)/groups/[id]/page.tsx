@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Pencil, Trash2, Box } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Box, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
@@ -15,6 +15,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { IconPicker, getIconComponent } from '@/components/ui/icon-picker';
 import { groupsService } from '@/services/groups.service';
+import { thingsService } from '@/services/things.service';
 import { Group, Thing } from '@/types';
 
 export default function GroupDetailPage() {
@@ -36,6 +37,14 @@ export default function GroupDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  // Assign things modal
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [allThings, setAllThings] = useState<Thing[]>([]);
+  const [loadingAllThings, setLoadingAllThings] = useState(false);
+  const [selectedThingIds, setSelectedThingIds] = useState<Set<string>>(new Set());
+  const [assigning, setAssigning] = useState(false);
+  const [assignSearch, setAssignSearch] = useState('');
 
   const fetchGroup = async () => {
     setLoadingGroup(true);
@@ -94,6 +103,62 @@ export default function GroupDetailPage() {
       setDeleting(false);
     }
   };
+
+  const openAssignModal = async () => {
+    setAssignOpen(true);
+    setSelectedThingIds(new Set());
+    setAssignSearch('');
+    setLoadingAllThings(true);
+    try {
+      const res = await thingsService.findAll({ page: '1', limit: '200', registrationStatus: 'registered' });
+      // Filter out things already in this group
+      const currentIds = new Set(things.map((t) => t._id));
+      setAllThings(res.data.filter((t) => !currentIds.has(t._id)));
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
+    } finally {
+      setLoadingAllThings(false);
+    }
+  };
+
+  const toggleThingSelection = (thingId: string) => {
+    setSelectedThingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(thingId)) next.delete(thingId);
+      else next.add(thingId);
+      return next;
+    });
+  };
+
+  const handleAssignThings = async () => {
+    if (selectedThingIds.size === 0) return;
+    setAssigning(true);
+    try {
+      await Promise.all(
+        Array.from(selectedThingIds).map(async (thingId) => {
+          const thing = allThings.find((t) => t._id === thingId);
+          if (!thing) return;
+          const currentGroups = thing.groupIds || [];
+          if (!currentGroups.includes(id)) {
+            await thingsService.update(thingId, { groupIds: [...currentGroups, id] } as any);
+          }
+        }),
+      );
+      setAssignOpen(false);
+      toast({ title: t('thingsAssigned'), variant: 'success' });
+      await fetchThings();
+    } catch (err) {
+      toast({ title: err instanceof Error ? err.message : tc('error'), variant: 'error' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const filteredAssignThings = allThings.filter((t) => {
+    if (!assignSearch) return true;
+    const q = assignSearch.toLowerCase();
+    return t.name.toLowerCase().includes(q) || (t.ipAddress || '').includes(q) || (t.macAddress || '').toLowerCase().includes(q);
+  });
 
   const thingColumns = [
     { key: 'name', header: tc('name') },
@@ -176,7 +241,13 @@ export default function GroupDetailPage() {
 
       {/* Things in Group */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">{t('thingsInGroup')}</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">{t('thingsInGroup')}</h2>
+          <Button size="sm" onClick={openAssignModal}>
+            <Plus className="h-4 w-4 mr-1" />
+            {t('assignThings')}
+          </Button>
+        </div>
         {!loadingThings && things.length === 0 ? (
           <EmptyState
             icon={Box}
@@ -254,6 +325,57 @@ export default function GroupDetailPage() {
         message={t('deleteGroupConfirm', { name: group?.name ?? '' })}
         loading={deleting}
       />
+
+      {/* Assign Things Modal */}
+      <Modal open={assignOpen} onClose={() => setAssignOpen(false)} title={t('assignThings')} isDirty={selectedThingIds.size > 0}>
+        <div className="space-y-4">
+          <Input
+            id="assign-search"
+            placeholder={t('searchThings')}
+            value={assignSearch}
+            onChange={(e) => setAssignSearch(e.target.value)}
+          />
+          <div className="max-h-72 overflow-y-auto rounded border border-border">
+            {loadingAllThings ? (
+              <div className="flex items-center justify-center h-20">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : filteredAssignThings.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t('noAvailableThings')}</p>
+            ) : (
+              filteredAssignThings.map((thing) => (
+                <label
+                  key={thing._id}
+                  className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedThingIds.has(thing._id)}
+                    onChange={() => toggleThingSelection(thing._id)}
+                    className="rounded border-border"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{thing.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{thing.ipAddress || thing.macAddress || '-'}</p>
+                  </div>
+                  <StatusBadge registrationStatus={thing.registrationStatus} healthStatus={thing.healthStatus} />
+                </label>
+              ))
+            )}
+          </div>
+          {selectedThingIds.size > 0 && (
+            <p className="text-xs text-muted-foreground">{t('selectedCount', { count: selectedThingIds.size })}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setAssignOpen(false)}>
+              {tc('cancel')}
+            </Button>
+            <Button onClick={handleAssignThings} loading={assigning} disabled={selectedThingIds.size === 0}>
+              {t('assignThings')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
