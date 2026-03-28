@@ -110,7 +110,7 @@ export default function GroupDetailPage() {
     setAssignSearch('');
     setLoadingAllThings(true);
     try {
-      const res = await thingsService.findAll({ page: '1', limit: '200', registrationStatus: 'registered' });
+      const res = await thingsService.findAll({ page: '1', limit: '100', registrationStatus: 'registered' });
       // Filter out things already in this group
       const currentIds = new Set(things.map((t) => t._id));
       setAllThings(res.data.filter((t) => !currentIds.has(t._id)));
