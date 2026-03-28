@@ -335,6 +335,24 @@ export default function GroupDetailPage() {
             value={assignSearch}
             onChange={(e) => setAssignSearch(e.target.value)}
           />
+          {filteredAssignThings.length > 0 && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
+              <input
+                type="checkbox"
+                checked={filteredAssignThings.length > 0 && filteredAssignThings.every((t) => selectedThingIds.has(t._id))}
+                onChange={() => {
+                  const allSelected = filteredAssignThings.every((t) => selectedThingIds.has(t._id));
+                  setSelectedThingIds((prev) => {
+                    const next = new Set(prev);
+                    filteredAssignThings.forEach((t) => allSelected ? next.delete(t._id) : next.add(t._id));
+                    return next;
+                  });
+                }}
+                className="rounded border-border"
+              />
+              {t('selectAll')}
+            </label>
+          )}
           <div className="max-h-72 overflow-y-auto rounded border border-border">
             {loadingAllThings ? (
               <div className="flex items-center justify-center h-20">

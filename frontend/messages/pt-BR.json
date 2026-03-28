@@ -393,6 +393,7 @@
     "assignThings": "Associar Dispositivos",
     "searchThings": "Buscar dispositivos...",
     "noAvailableThings": "Nenhum dispositivo disponível para associar.",
+    "selectAll": "Selecionar todos",
     "selectedCount": "{count} selecionados",
     "thingsAssigned": "Dispositivos associados com sucesso.",
     "groupUpdated": "Grupo atualizado com sucesso.",
