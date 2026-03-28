@@ -15,7 +15,7 @@ Docker Compose: `frontend:9000`, `api:9001`, `worker`, `mongodb:9017`, `redis:90
 ## Tech Stack
 
 - **Backend:** NestJS 10, TypeScript, MongoDB/Mongoose, Redis/Bull, JWT auth, AES-256-GCM encryption
-- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS v4, Lucide React, React Flow, Recharts
+- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS v4, Lucide React, React Flow, Recharts, next-intl
 - **Worker:** Python 3.11, python-nmap, redis, mac-vendor-lookup, requests
 - **Infra:** Docker Compose, MongoDB 7, Redis 7
 
@@ -43,6 +43,13 @@ Docker Compose: `frontend:9000`, `api:9001`, `worker`, `mongodb:9017`, `redis:90
 - **API proxy:** Next.js middleware rewrites `/api/*` → API container (`API_INTERNAL_URL`), no `NEXT_PUBLIC_API_URL` needed
 - **WebSocket:** Fetches `API_PUBLIC_URL` from `/runtime-config` route at runtime (no build-time baking)
 - **ThingTypes context:** `ThingTypesProvider` wraps app, `useThingTypes()` for cached type data (icons, colors, capabilities)
+- **i18n:** `next-intl` in non-routing mode. `locale` cookie drives language. `useTranslations('Namespace')` in all pages/components. Translation files: `messages/en.json`, `messages/pt-BR.json`. System ThingType names translated by slug via `ThingTypes` namespace.
+- **Toast notifications:** `ToastProvider` + `useToast()` hook. Variants: success (green), error (red), info (blue). Auto-dismiss 4s. All CRUD operations show toasts.
+- **Button loading:** `<Button loading={bool}>` shows spinner + disables. No more `{saving ? 'Saving...' : 'Save'}` ternaries.
+- **Modal:** Animations (fade/scale), scroll lock, `isDirty` prop for unsaved changes confirmation. Click-outside only closes if mousedown+mouseup both on overlay.
+- **Form validation:** Input/Select `error` prop for styled field errors (red border + icon + message). No native `required`.
+- **TypeSelect:** Custom dropdown with icons, colors, translated system type names, keyboard navigation (arrows/enter/escape).
+- **Credentials:** Never returned in API list/detail responses. Fetched on-demand via `GET /things/:id/credentials`. Password masked with dots, copy-only.
 
 ### Worker (worker/)
 - **Auto-detect mock mode:** On Docker Desktop (Windows/macOS), mock mode activates automatically
@@ -62,7 +69,7 @@ StatusEvent (transitions log, TTL 30 days)
 ```
 
 - **MAC address** is the stable device identifier (IP changes with DHCP)
-- **Credentials** encrypted with AES-256-GCM, key auto-generated at `/data/secrets/encryption.key`
+- **Credentials** encrypted with AES-256-GCM, key auto-generated at `/data/secrets/encryption.key`. Never exposed in list/detail API responses — separate `GET /things/:id/credentials` endpoint for on-demand decryption.
 - **Channels** are embedded in Things (for PLCs, multi-output devices)
 - **Thing status** split into `registrationStatus` (discovered/registered) and `healthStatus` (online/offline/unknown)
 - **ThingType** is a CRUD entity with slug, icon, color, capabilities. Seeded incrementally (adds missing types on startup, never overwrites user customizations).
@@ -75,7 +82,7 @@ StatusEvent (transitions log, TTL 30 days)
 | users | `/api/v1/users` | CRUD, bcrypt 12 rounds |
 | locals | `/api/v1/locals` | Physical locations |
 | networks | `/api/v1/locals/:id/networks`, `/api/v1/networks` | VLANs, CIDR |
-| things | `/api/v1/things`, `/api/v1/things/:id/history` | Filters: q, registrationStatus, healthStatus, networkId, groupId. History with uptime calc. |
+| things | `/api/v1/things`, `/api/v1/things/:id/history`, `/api/v1/things/:id/credentials` | Filters: q, registrationStatus, healthStatus, networkId, groupId. History with uptime calc. Credentials endpoint for on-demand decryption. |
 | thing-types | `/api/v1/thing-types` | CRUD, GET is public (no auth). Capabilities per type. |
 | groups | `/api/v1/groups` | Transversal, icon picker |
 | scanner | `/api/v1/scanner/discover,jobs` | Rate limited (1 concurrent, 60s cooldown) |
@@ -126,3 +133,5 @@ Full release (build + tag + push): `./scripts/release.sh <version>`
 - Batch fixes v1: `docs/superpowers/specs/2026-03-26-batch-fixes-v1.md`
 - Status history: `docs/superpowers/specs/2026-03-26-status-history-metrics.md`
 - Network map topology: `docs/superpowers/specs/2026-03-26-network-map-topology.md`
+- i18n: `docs/superpowers/specs/2026-03-27-i18n-design.md`
+- UX polish: `docs/superpowers/specs/2026-03-27-ux-polish-design.md`
