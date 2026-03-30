@@ -28,15 +28,19 @@ IoT Sentinel fixes this.
 
 - **Hierarchical inventory** — Locations → Networks/VLANs (CIDR) → Devices (Things)
 - **Stable identity via MAC address** — survives DHCP reassignments
-- **Encrypted credential storage** — AES-256-GCM, reveal-on-click in the UI
+- **Encrypted credential storage** — AES-256-GCM, fetched on-demand via separate endpoint, password masked (copy-only)
 - **Network scanning** — nmap-based discovery, auto mock mode on Docker Desktop
-- **Groups** — Transversal labels (Cameras, Switches, PLCs) with custom icons
+- **Device types (ThingTypes)** — CRUD with custom icons, colors, capabilities; 19 system types pre-seeded (router, camera, PLC, smart switch, etc.)
+- **Groups** — Transversal labels with custom icons, bulk assign devices from group detail
 - **Channels** — Model multi-output devices (PLCs with 26+ outputs)
-- **Real-time status** — WebSocket push updates, monitor checks
+- **Real-time status** — WebSocket push updates, health monitor checks
+- **Status history** — 24h/7d/30d timeline with uptime calculation
 - **Notification rules** — Alert on status change, offline duration, or new discovery
-- **Dark theme UI** — Grafana/Datadog-inspired, React Flow network map
-- **Backup & restore** — Password-protected compressed exports
-- **Setup wizard** — First-boot admin creation, zero manual config
+- **Network map** — Star topology visualization with React Flow
+- **Internationalization (i18n)** — Full pt-BR and English support via next-intl
+- **Dark theme UI** — Grafana/Datadog-inspired, polished UX with toast notifications and loading states
+- **Backup & restore** — Password-protected compressed exports with credential re-encryption
+- **Setup wizard** — First-boot admin creation with language selection, zero manual config
 - **One-command start** — `docker compose up -d` and you're done
 
 ---
@@ -72,7 +76,7 @@ docker compose -f docker-compose.prod.yml up -d
 
 That's it. MongoDB and Redis are included. No external dependencies.
 
-> **Note:** On first boot, the setup wizard creates your admin account. The encryption key for credentials is auto-generated and persisted in a Docker volume.
+> **Note:** On first boot, the setup wizard creates your admin account and sets your preferred language (pt-BR or English). The encryption key for credentials is auto-generated and persisted in a Docker volume.
 
 ---
 
@@ -102,11 +106,19 @@ Services will start with:
 ```bash
 cd api
 
-# Unit tests (42 tests)
+# Unit tests
 npx jest --verbose
 
-# E2E tests using mongodb-memory-server (20 tests)
+# E2E tests using mongodb-memory-server
 npx jest --config test/jest-e2e.config.ts --forceExit
+```
+
+### Docker Builds (Validation)
+
+```bash
+docker build -t test-api -f api/Dockerfile api/
+docker build -t test-frontend -f frontend/Dockerfile frontend/
+docker build -t test-worker -f worker/Dockerfile worker/
 ```
 
 ---
@@ -119,9 +131,9 @@ npx jest --config test/jest-e2e.config.ts --forceExit
 └───────────────────────┬─────────────────────────────┘
                         │ HTTP / WebSocket
                         ▼
-┌───────────────────────────────────────────────────── │
+┌─────────────────────────────────────────────────────┐
 │  frontend  (Next.js 14, App Router, Tailwind v4)     │
-│  :3000                                               │
+│  :3000  →  next-intl i18n (pt-BR / en)               │
 └───────────────────────┬─────────────────────────────┘
                         │ REST API / WS
                         ▼
@@ -152,7 +164,7 @@ npx jest --config test/jest-e2e.config.ts --forceExit
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS v4, Lucide React, React Flow |
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS v4, Lucide React, React Flow, next-intl |
 | Backend | NestJS 10, TypeScript, Mongoose, Bull (Redis queues), Socket.IO, JWT, Swagger |
 | Scanner | Python 3.11, python-nmap |
 | Database | MongoDB 7 |
@@ -170,10 +182,12 @@ iot-sentinel/
 │       ├── auth/           # JWT authentication
 │       ├── locals/         # Physical locations
 │       ├── networks/       # VLANs and CIDR ranges
-│       ├── things/         # Device registry
+│       ├── things/         # Device registry + credentials endpoint
+│       ├── thing-types/    # Device type CRUD + system seed
 │       ├── groups/         # Transversal device groups
 │       ├── scanner/        # Network scan orchestration
 │       ├── monitor/        # Device status checks
+│       ├── status-history/ # Status events + uptime calculation
 │       ├── notifications/  # Rules and WebSocket push
 │       ├── backup/         # Export/restore
 │       ├── settings/       # App config + setup wizard
@@ -181,15 +195,19 @@ iot-sentinel/
 │       └── crypto/         # AES-256-GCM encryption
 │
 ├── frontend/               # Next.js frontend
+│   ├── messages/           # i18n translation files (en.json, pt-BR.json)
 │   └── src/
 │       ├── app/            # App Router pages
 │       │   ├── (dashboard)/
 │       │   ├── login/
 │       │   └── setup/
 │       ├── components/     # UI and domain components
+│       │   ├── ui/         # Button, Input, Modal, Toast, TypeSelect, etc.
+│       │   ├── layout/     # Sidebar, Header
+│       │   └── things/     # CredentialsReveal, StatusHistory
 │       ├── services/       # API client layer
-│       ├── contexts/       # React context providers
-│       └── hooks/          # Custom hooks
+│       ├── contexts/       # Auth, ThingTypes providers
+│       └── i18n/           # next-intl request config
 │
 ├── worker/                 # Python nmap scanner
 │   └── src/
@@ -198,6 +216,40 @@ iot-sentinel/
 ├── docker-compose.prod.yml     # Production (Docker Hub images)
 └── docker-compose.dev.yml      # Dev overrides (hot reload)
 ```
+
+---
+
+## Internationalization (i18n)
+
+IoT Sentinel supports **Portuguese (pt-BR)** and **English** out of the box, powered by [next-intl](https://next-intl-docs.vercel.app/) in non-routing mode (no `/en/` or `/pt-BR/` URL segments).
+
+- Language is selected during setup wizard and persisted as a backend setting
+- A `locale` cookie drives the frontend language
+- Changing language in Settings applies immediately (no page reload)
+- All 13 pages and shared components are fully translated
+- System device type names are translated by slug (e.g., "Router" → "Roteador")
+- Status badges, scanner history, and scan types are all translated
+
+---
+
+## Security
+
+### Credential Encryption
+
+Device credentials (username, password, notes) are encrypted at rest using **AES-256-GCM**:
+
+- Encryption key is auto-generated on first boot and stored at `/data/secrets/encryption.key`
+- Credentials are **never returned** in list (`GET /things`) or detail (`GET /things/:id`) API responses
+- A separate authenticated endpoint (`GET /things/:id/credentials`) decrypts and returns credentials on demand
+- In the UI, passwords are masked with dots — only accessible via the copy button
+- Backup exports re-encrypt credentials with a user-provided password
+
+### Authentication
+
+- JWT-based: access token (15min) + refresh token (7d)
+- Automatic token refresh on 401, force logout on refresh failure
+- Role-based access control (Admin / Viewer)
+- Passwords hashed with bcrypt (12 rounds)
 
 ---
 
@@ -217,12 +269,16 @@ All endpoints are prefixed with `/api/v1/`. Key resource paths:
 | Locations | `/api/v1/locals` |
 | Networks | `/api/v1/locals/:id/networks` |
 | Devices | `/api/v1/things` |
+| Device Credentials | `/api/v1/things/:id/credentials` |
+| Device Types | `/api/v1/thing-types` |
 | Groups | `/api/v1/groups` |
 | Scanner | `/api/v1/scanner` |
+| Monitor | `/api/v1/monitor` |
 | Notifications | `/api/v1/notifications` |
 | Backup | `/api/v1/backup` |
 | Dashboard | `/api/v1/dashboard/stats` |
-| Health | `/health` |
+| Settings | `/api/v1/settings` |
+| Health | `/health`, `/health/ready` |
 
 ---
 
@@ -264,7 +320,8 @@ Contributions are welcome. To get started:
 2. Create a feature branch (`git checkout -b feat/my-feature`)
 3. Make your changes with tests where applicable
 4. Run the test suite (`cd api && npx jest`)
-5. Open a pull request
+5. Validate with Docker builds (`docker build -t test-api -f api/Dockerfile api/`)
+6. Open a pull request
 
 Please keep PRs focused — one feature or fix per PR. For larger changes, open an issue first to discuss the approach.
 
